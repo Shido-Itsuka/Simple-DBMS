@@ -12,9 +12,9 @@ def main(page: ft.Page):
     page.window_focused = True
     page.theme_mode = ft.ThemeMode.DARK
 
-    page.window_maximizable = True
     page.window_minimizable = True
-    page.window_resizable = True
+    page.window_maximizable = False
+    page.window_resizable = False
 
     page.window_height = 800
     page.window_width = 1200
@@ -49,12 +49,13 @@ def main(page: ft.Page):
                             page.go('/main_page_admin')
                         case 'user':
                             page.go('/main_page_user')
+                    password.value = ''
+                    username.value = ''
                 else:
                     print('Password incorrect')
                     print(f'Username: {username.value} Password: {password.value}')
                     password.error_text = 'Password incorrect'
                     page.update()
-            # page.update()
 
     def auth_fields_on_change(e):
         if e.control.value == '':
@@ -98,7 +99,8 @@ def main(page: ft.Page):
                                 shape=ft.RoundedRectangleBorder(
                                     radius=10
                                 )
-                            )
+                            ),
+                            on_click=lambda _: page.go('/main_page_guest')
                         ),
                     ],
                     alignment=ft.MainAxisAlignment.END
@@ -110,7 +112,9 @@ def main(page: ft.Page):
                             radius=10
                         ),
                     ),
-                    on_click=login
+                    on_click=login,
+
+
                 )
             ],
             alignment=ft.MainAxisAlignment.SPACE_EVENLY,
