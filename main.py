@@ -1,115 +1,119 @@
 import sqlite3
 
+# Устанавливаем соединение с базой данных или создаем новую, если она не существует
+conn = sqlite3.connect('car_catalog.db')
 
-class Database:
-    def __init__(self, db_name):
-        self.db_name = db_name
-        self.conn = None
+# Создаем курсор для выполнения SQL-запросов
+cur = conn.cursor()
 
-    def connect(self):
-        self.conn = sqlite3.connect(self.db_name)
+# Создаем таблицу "Марки и модели"
+cur.execute('''CREATE TABLE IF NOT EXISTS Марки_и_модели (
+               ID INTEGER PRIMARY KEY,
+               Марка TEXT,
+               Модель TEXT)''')
 
-    def close(self):
-        if self.conn:
-            self.conn.close()
+# Создаем таблицу "Характеристики автомобилей"
+cur.execute('''CREATE TABLE IF NOT EXISTS Характеристики_автомобилей (
+               ID INTEGER PRIMARY KEY,
+               ID_марки_и_модели INTEGER,
+               Год_выпуска INTEGER,
+               Цвет TEXT,
+               Тип_кузова TEXT,
+               Тип_двигателя TEXT,
+               Мощность_двигателя REAL,
+               Пробег REAL,
+               Цена REAL,
+               Тип_коробки_передач TEXT,
+               FOREIGN KEY (ID_марки_и_модели) REFERENCES Марки_и_модели(ID))''')
 
-    def create_table(self, table_name, columns):
-        query = f"""
-            CREATE TABLE IF NOT EXISTS {table_name} (
-                {columns}
-            )
-        """
-        self.conn.execute(query)
+# Создаем таблицу "Дополнительные опции и особенности"
+cur.execute('''CREATE TABLE IF NOT EXISTS Дополнительные_опции_и_особенности (
+               ID INTEGER PRIMARY KEY,
+               ID_автомобиля INTEGER,
+               Опция_или_особенность TEXT,
+               FOREIGN KEY (ID_автомобиля) REFERENCES Характеристики_автомобилей(ID))''')
 
-    def insert_data(self, table_name, values):
-        query = f"""
-            INSERT INTO {table_name} VALUES ({','.join('?' for _ in values)})
-        """
-        self.conn.execute(query, values)
+# Подтверждаем выполнение изменений в базе данных
+conn.commit()
 
-    def select_data(self, table_name, where_clause=None):
-        query = f"""
-            SELECT * FROM {table_name}
-        """
-        if where_clause:
-            query += f" WHERE {where_clause}"
-        return self.conn.execute(query).fetchall()
+# Закрываем соединение с базой данных
+conn.close()
 
-    def update_data(self, table_name, set_clause, where_clause):
-        query = f"""
-            UPDATE {table_name} SET {set_clause}
-            WHERE {where_clause}
-        """
-        self.conn.execute(query)
-
-    def delete_data(self, table_name, where_clause):
-        query = f"""
-            DELETE FROM {table_name}
-            WHERE {where_clause}
-        """
-        self.conn.execute(query)
-
-    def drop_table(self, table_name):
-        query = f"""
-            DROP TABLE IF EXISTS {table_name}
-        """
-        self.conn.execute(query)
-
-
-# Пример использования
-
-db = Database("cars.db")
-
-# Подключение к базе данных
-db.connect()
-
-# Создание таблицы
-columns = """
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    brand_model TEXT NOT NULL,
-    year INTEGER NOT NULL,
-    color TEXT NOT NULL,
-    body_type TEXT NOT NULL,
-    engine_type TEXT NOT NULL,
-    engine_power INTEGER NOT NULL,
-    mileage INTEGER NOT NULL,
-    price REAL NOT NULL,
-    transmission_type TEXT NOT NULL,
-    additional_features TEXT
-"""
-db.create_table("cars", columns)
-
-# Добавление записей
-cars = [
-    ("Toyota Camry", 2018, "Серебристый", "Седан", "Бензиновый", 180, 45000, 15000, "Автоматическая",
-     "Кожаный салон, навигационная система"),
-    ("BMW X5", 2020, "Черный", "Внедорожник", "Дизельный", 250, 25000, 40000, "Автоматическая",
-     "Панорамная крыша, система помощи при парковке"),
-    ("Volkswagen Golf", 2016, "Синий", "Хэтчбек", "Бензиновый", 110, 60000, 10000, "Механическая",
-     "Климат-контроль, система антиблокировки (ABS)"),
+# Список данных для таблицы "Марки и модели"
+marques_modeles_data = [
+    ("Toyota", "Camry"),
+    ("BMW", "3 Series"),
+    ("Mercedes", "E-Class"),
+    ("Honda", "Civic"),
+    ("Ford", "Mustang"),
+    ("Audi", "A4"),
+    ("Volkswagen", "Golf"),
+    ("Nissan", "Altima"),
+    ("Chevrolet", "Silverado"),
+    ("Hyundai", "Sonata")
 ]
-for car in cars:
-    db.insert_data("cars", car)
 
-# Вывод всех записей
-print("Все записи:")
-for row in db.select_data("cars"):
-    print(row)
+# Список данных для таблицы "Характеристики автомобилей"
+car_characteristics_data = [
+    (1, 2018, "Синий", "Седан", "Бензин", 178, 45000, 20000, "Автоматическая"),
+    (2, 2020, "Черный", "Седан", "Дизель", 190, 25000, 35000, "Автоматическая"),
+    (3, 2019, "Серебристый", "Седан", "Бензин", 200, 30000, 40000, "Автоматическая"),
+    (4, 2017, "Красный", "Седан", "Бензин", 158, 55000, 15000, "Механическая"),
+    (5, 2016, "Жёлтый", "Купе", "Бензин", 310, 20000, 30000, "Механическая"),
+    (6, 2018, "Белый", "Седан", "Бензин", 190, 40000, 25000, "Автоматическая"),
+    (7, 2019, "Зелёный", "Хэтчбек", "Гибрид", 150, 35000, 28000, "Автоматическая"),
+    (8, 2021, "Синий", "Седан", "Электричество", 200, 1000, 45000, "Автоматическая"),
+    (9, 2015, "Черный", "Пикап", "Бензин", 355, 60000, 20000, "Автоматическая"),
+    (10, 2020, "Серый", "Седан", "Бензин", 180, 15000, 30000, "Механическая"),
+    (1, 2016, "Серебристый", "Внедорожник", "Бензин", 250, 30000, 35000, "Автоматическая"),
+    (2, 2019, "Красный", "Кабриолет", "Бензин", 320, 10000, 60000, "Автоматическая"),
+    (3, 2018, "Белый", "Внедорожник", "Дизель", 220, 40000, 45000, "Автоматическая"),
+    (4, 2020, "Черный", "Хэтчбек", "Бензин", 170, 20000, 25000, "Механическая"),
+    (5, 2017, "Синий", "Внедорожник", "Бензин", 280, 50000, 40000, "Автоматическая")
+]
 
-# Вывод записи по id
-print("Запись с id=2:")
-row = db.select_data("cars", "id=2")[0]
-print(row)
+# Список данных для таблицы "Дополнительные опции и особенности"
+additional_options_data = [
+    (1, "Кожаные сиденья"),
+    (1, "Люк"),
+    (2, "Навигационная система"),
+    (2, "Подогреваемые сиденья"),
+    (3, "Система помощи при парковке"),
+    (4, "Легкосплавные диски"),
+    (4, "Камера заднего вида"),
+    (5, "Спортивный пакет"),
+    (5, "Превосходная аудиосистема"),
+    (6, "Система предупреждения о выходе из полосы"),
+    (7, "Бесключевой доступ"),
+    (8, "Адаптивный круиз-контроль"),
+    (9, "Тяговый пакет"),
+    (10, "Панорамный люк"),
+    (10, "Мониторинг слепых зон")
+]
 
-# Изменение записи
-db.update_data("cars", "price=12000", "id=3")
 
-# Удаление записи
-db.delete_data("cars", "id=1")
+# Функция для заполнения таблиц
+def fill_tables():
+    conn = sqlite3.connect('car_catalog.db')
+    cur = conn.cursor()
 
-# Отображение таблицы
-print("Таблица cars:")
-db.select_data("cars", None)
+    # Заполнение таблицы "Марки и модели"
+    cur.executemany("INSERT INTO Марки_и_модели (Марка, Модель) VALUES (?, ?)", marques_modeles_data)
 
-# Отключение от базы данных
-db.close()
+    # Заполнение таблицы "Характеристики автомобилей"
+    cur.executemany(
+        "INSERT INTO Характеристики_автомобилей (ID_марки_и_модели, Год_выпуска, Цвет, Тип_кузова, Тип_двигателя,"
+        " Мощность_двигателя, Пробег, Цена, Тип_коробки_передач) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        car_characteristics_data)
+
+    # Заполнение таблицы "Дополнительные опции и особенности"
+    cur.executemany(
+        "INSERT INTO Дополнительные_опции_и_особенности (ID_автомобиля, Опция_или_особенность) VALUES (?, ?)",
+        additional_options_data)
+
+    conn.commit()
+    conn.close()
+
+
+# Вызов функции для заполнения таблиц
+fill_tables()
