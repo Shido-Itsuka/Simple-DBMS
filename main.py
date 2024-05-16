@@ -91,6 +91,14 @@ additional_options_data = [
     (10, "Мониторинг слепых зон")
 ]
 
+new_car_brands_and_models = [
+    ("Tesla", "Model S"),
+    ("Subaru", "Outback"),
+    ("Kia", "Sportage"),
+    ("Porsche", "911"),
+    ("Land Rover", "Range Rover")
+]
+
 
 # Функция для заполнения таблиц
 def fill_tables():
@@ -99,6 +107,7 @@ def fill_tables():
 
     # Заполнение таблицы "Марки и модели"
     cur.executemany("INSERT INTO Марки_и_модели (Марка, Модель) VALUES (?, ?)", marques_modeles_data)
+    cur.executemany("INSERT INTO Марки_и_модели (Марка, Модель) VALUES (?, ?)", new_car_brands_and_models)
 
     # Заполнение таблицы "Характеристики автомобилей"
     cur.executemany(
