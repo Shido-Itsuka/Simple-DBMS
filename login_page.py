@@ -1,6 +1,5 @@
 import flet as ft
 import json
-import sqlite3
 
 from main_page import _view_ as main_view
 
@@ -23,6 +22,48 @@ def main(page: ft.Page):
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
 
     page.window_center()
+
+    # ---------------------------------------------------------------------------------------------------------
+
+    def window_event(e):
+        if e.data == "close":
+            page.dialog = confirm_dialog
+            confirm_dialog.open = True
+            page.update()
+
+    page.window_prevent_close = True
+    page.on_window_event = window_event
+
+    def yes_click(e):
+        page.window_destroy()
+
+    def no_click(e):
+        confirm_dialog.open = False
+        page.update()
+
+    confirm_dialog = ft.AlertDialog(
+        shape=ft.RoundedRectangleBorder(radius=10),
+        modal=True,
+        title=ft.Text("Подтвердите Выход"),
+        content=ft.Text("Вы уверены, что хотите выйти?"),
+        actions=[
+            ft.ElevatedButton("Да",
+                              on_click=yes_click,
+                              style=ft.ButtonStyle(
+                                  shape=ft.RoundedRectangleBorder(radius=10)
+                              ),
+                              ),
+            ft.OutlinedButton("Нет",
+                              on_click=no_click,
+                              style=ft.ButtonStyle(
+                                  shape=ft.RoundedRectangleBorder(radius=10)
+                              ),
+                              ),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END
+    )
+
+    # ---------------------------------------------------------------------------------------------------------
 
     def login(e):
         if username.value == '':
@@ -124,7 +165,10 @@ def main(page: ft.Page):
         bgcolor="#272b25",
         width=400,
         height=500,
-        border=ft.border.all(2, '#363a34'),
+        border=ft.border.all(
+            2,
+            color='#363a34'
+        ),
         border_radius=ft.border_radius.all(10),
         padding=30,
         alignment=ft.alignment.center,
@@ -144,6 +188,11 @@ def main(page: ft.Page):
 
     def route_change(route):
         page.views.clear()
+        if page.theme_mode == ft.ThemeMode.DARK:
+            login_body.bgcolor = "#272b25"
+        else:
+            login_body.bgcolor = ft.colors.SECONDARY_CONTAINER
+
         page.views.append(
             ft.View(
                 "/",
