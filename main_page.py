@@ -8,8 +8,47 @@ queries = ft.Container(
     content=ft.Text('Запросы')
 )
 
+
+def change_theme(e):
+    e.page.theme_mode = e.page.theme_mode.LIGHT \
+        if e.page.theme_mode == e.page.theme_mode.DARK \
+        else e.page.theme_mode.DARK
+    e.control.selected = True if e.control.selected is False else False
+    page_update(e.page)
+
+
 settings = ft.Container(
-    content=ft.Text('Настройки')
+    content=ft.Column(
+        controls=[
+            ft.Card(
+                content=ft.Container(
+                    content=ft.Row(
+                        [
+                            ft.Text(
+                                'Сменить тему:'
+                            ),
+                            theme_button := ft.IconButton(
+                                icon=ft.icons.DARK_MODE_ROUNDED,
+                                selected_icon=ft.icons.LIGHT_MODE_ROUNDED,
+                                on_click=change_theme,
+                            )
+                        ],
+                        spacing=10,
+
+                    ),
+                    padding=10
+                ),
+                variant=ft.CardVariant.ELEVATED,
+                show_border_on_foreground=True,
+                is_semantic_container=True,
+            )
+        ]
+    ),
+    padding=10
+)
+
+helppage = ft.Container(
+    content=ft.Text('Помощь')
 )
 
 baseform = ft.Container(
@@ -22,8 +61,53 @@ def page_update(p: ft.Page):
     p.update()
 
 
+def logout(e):
+    print('Logout')
+    e.page.clean()
+    e.page.go('/')
+
+
+usertab = ft.Column(
+    [
+        ft.Divider(),
+        ft.Container(
+            content=ft.Row(
+                [
+                    ft.Row(
+                        [
+                            user_type_text := ft.Text(
+                                'User Type',
+                                style=ft.TextThemeStyle.TITLE_SMALL,
+                                size=18
+                            )
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        expand=True
+                    ),
+                    ft.IconButton(
+                        icon=ft.icons.LOGOUT_ROUNDED,
+                        icon_color=ft.colors.RED_700,
+                        on_click=logout
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                spacing=20
+            ),
+            padding=ft.padding.only(
+                left=15,
+                # top=30,
+                right=10
+            ),
+            expand=True
+        )
+    ],
+    height=150,
+
+)
+
+
 def on_change_rail(e):
-    match e.control.data:
+    match e.control.selected_index:
         case 0:
             baseform.content = dbpage
             print('Выбрана база данных')
@@ -33,227 +117,86 @@ def on_change_rail(e):
         case 2:
             baseform.content = settings
             print('Выбраны настройки')
+        case 3:
+            baseform.content = helppage
+            print('Выбрана помощь')
     page_update(e.page)
 
 
-NavRail = ft.Container(
-    content=ft.Column(
-        controls=[
-            ft.ExpansionTile(
-                title=ft.Text(
-                    'База Данных',
-                ),
-                controls=[
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Главная таблица',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=0.1
-                    ),
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Первая таблица',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=0.1
-                    ),
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Вторая таблица',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=0.1
-                    ),
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Третья таблица',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=0.1
-                    )
-                ],
-                affinity=ft.TileAffinity.LEADING,
-                controls_padding=ft.padding.only(left=10),
-
+NavRail = ft.NavigationRail(
+    destinations=[
+        ft.NavigationRailDestination(
+            label_content=ft.Text(
+                'База данных',
+                color=ft.colors.ON_BACKGROUND
             ),
-            ft.ExpansionTile(
-                title=ft.Text(
-                    'Запросы',
-                ),
-                controls=[
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Первый запрос',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=1.1
-                    ),
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Второй запрос',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=1.1
-                    ),
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Третий запрос',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=1.1
-                    ),
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Четвертый запрос',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=1.1
-                    ),
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Пятый запрос',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=1.1
-                    ),
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Шестой запрос',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=1.1
-                    ),
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Седьмой запрос',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=1.1
-                    ),
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Восьмой запрос',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=1.1
-                    ),
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Девятый запрос',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=1.1
-                    ),
-                    ft.ListTile(
-                        title=ft.Text(
-                            'Десятый запрос',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=1.1
-                    ),
-                ],
-                affinity=ft.TileAffinity.LEADING,
-                controls_padding=ft.padding.only(left=10),
-
+            icon=ft.icons.DATASET_OUTLINED,
+            selected_icon=ft.icons.DATASET,
+            padding=40
+        ),
+        ft.NavigationRailDestination(
+            label_content=ft.Text(
+                'Запросы',
+                color=ft.colors.ON_BACKGROUND
             ),
-            ft.ExpansionTile(
-                title=ft.Text(
-                    'Настройки',
-                ),
-                controls=[
-                    ft.ListTile(
-                        title=ft.Text(
-                            '---',
-                            style=ft.TextThemeStyle.BODY_MEDIUM
-                        ),
-                        on_click=on_change_rail,
-                        data=2.1
-                    )
-                ],
-                affinity=ft.TileAffinity.LEADING,
-                controls_padding=ft.padding.only(left=10),
-
+            icon=ft.icons.TABLE_ROWS_OUTLINED,
+            selected_icon=ft.icons.TABLE_ROWS,
+            padding=40,
+        ),
+        ft.NavigationRailDestination(
+            label_content=ft.Text(
+                'Настройки',
+                color=ft.colors.ON_BACKGROUND
             ),
-        ],
-        alignment=ft.MainAxisAlignment.START,
-        expand=True,
-        scroll=ft.ScrollMode.HIDDEN
-    ),
-    width=200,
-)
-
-
-def logout(e):
-    print('Logout')
-    e.page.clean()
-    e.page.go('/')
-
-
-usertab = ft.Container(
-    content=ft.Row(
-        [
-            ft.Text(
-                'User Type',
-                style=ft.TextThemeStyle.BODY_LARGE
+            icon=ft.icons.SETTINGS_OUTLINED,
+            selected_icon=ft.icons.SETTINGS,
+            padding=40
+        ),
+        ft.NavigationRailDestination(
+            label_content=ft.Text(
+                'Помощь',
+                color=ft.colors.ON_BACKGROUND
             ),
-            ft.IconButton(
-                icon=ft.icons.LOGOUT_ROUNDED,
-                icon_color=ft.colors.RED_700,
-                on_click=logout
-            ),
-        ],
-        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
-    ),
-    padding=20,
-    bgcolor=ft.colors.SECONDARY_CONTAINER,
-    # expand=True,
-    height=80
-
-)
-
-navbar = ft.Container(
-    content=ft.Column(
-        controls=[
-            NavRail
-        ],
-        expand=True,
-        alignment=ft.MainAxisAlignment.START,
-        scroll=ft.ScrollMode.HIDDEN
-    ),
-    padding=0,
-    width=200,
-    alignment=ft.alignment.top_center
-)
-
-left_panel = ft.Column(
-    controls=[
-        navbar,
-        usertab
+            icon=ft.icons.HELP_OUTLINE_ROUNDED,
+            selected_icon=ft.icons.HELP_ROUNDED,
+            padding=40
+        )
     ],
-    alignment=ft.MainAxisAlignment.END,
+    selected_index=0,
+    label_type=ft.NavigationRailLabelType.SELECTED,
+    bgcolor=ft.colors.TRANSPARENT,
+    trailing=usertab,
     width=200,
+    on_change=on_change_rail,
+    unselected_label_text_style=ft.TextStyle(
+        size=18
+    ),
+    selected_label_text_style=ft.TextStyle(
+        size=18
+    ),
+    # indicator_color=ft.colors.TRANSPARENT,
+    leading=ft.Column(
+        [
+            ft.Container(
+                # height=70,
+                content=ft.Text(
+                    'Простая СУБД',
+                    # style=ft.TextThemeStyle.TITLE_LARGE,
+                    size=20
+                ),
+                alignment=ft.alignment.center,
+                expand=True
+            ),
+            ft.Divider()
+        ],
+        height=70
+    )
 )
-
 
 main_container = ft.Container(
     content=ft.Row(
         [
-            left_panel,
+            NavRail,
             ft.VerticalDivider(
                 width=0,
                 thickness=1,
@@ -278,7 +221,10 @@ main_container = ft.Container(
 def _view_(login_type='guest') -> ft.View:
     # global user_type
     # user_type = login_type
-    usertab.content.controls[0].value = {'guest': 'Гость', 'admin': 'Админ', 'user': 'Пользователь'}[login_type]
+    user_type_text.value = {'guest': 'Гость', 'admin': 'Админ', 'user': 'Пользователь'}[
+        login_type]
+    NavRail.selected_index = 0
+    baseform.content = dbpage
 
     if login_type == 'admin':
         return ft.View(
