@@ -1,7 +1,51 @@
 import flet as ft
 
 dbpage = ft.Container(
-    content=ft.Text('Database Page')
+    content=ft.Column(
+        controls=[
+            ft.Row(
+                alignment=ft.MainAxisAlignment.CENTER,
+                controls=[
+                    table_select := ft.SegmentedButton(
+                        segments=[
+                            ft.Segment(
+                                value='0',
+                                label=ft.Text(
+                                    'Марки и модели',
+                                    weight=ft.FontWeight.NORMAL,
+                                    size=16
+                                )
+                            ),
+                            ft.Segment(
+                                value='1',
+                                label=ft.Text(
+                                    'Характеристики автомобилей',
+                                    weight=ft.FontWeight.NORMAL,
+                                    size=16
+                                )
+                            ),
+                            ft.Segment(
+                                value='2',
+                                label=ft.Text(
+                                    'Дополнительные опции',
+                                    weight=ft.FontWeight.NORMAL,
+                                    size=16
+                                )
+                            )
+                        ],
+                        selected={'0'},
+                        show_selected_icon=False
+                    )
+                ],
+                expand=True,
+                vertical_alignment=ft.CrossAxisAlignment.START
+            )
+        ],
+        expand=True,
+
+    ),
+    padding=20,
+    expand=True,
 )
 
 queries = ft.Container(
@@ -17,34 +61,40 @@ def change_theme(e):
     page_update(e.page)
 
 
+change_theme_content = ft.Container(
+    content=ft.Row(
+        [
+            ft.Text(
+                'Сменить тему:'
+            ),
+            theme_button := ft.IconButton(
+                icon=ft.icons.DARK_MODE_ROUNDED,
+                selected_icon=ft.icons.LIGHT_MODE_ROUNDED,
+                on_click=change_theme,
+            )
+        ],
+        spacing=10,
+        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+    ),
+    padding=10
+)
+
 settings = ft.Container(
     content=ft.Column(
         controls=[
-            ft.Card(
-                content=ft.Container(
-                    content=ft.Row(
-                        [
-                            ft.Text(
-                                'Сменить тему:'
-                            ),
-                            theme_button := ft.IconButton(
-                                icon=ft.icons.DARK_MODE_ROUNDED,
-                                selected_icon=ft.icons.LIGHT_MODE_ROUNDED,
-                                on_click=change_theme,
-                            )
-                        ],
-                        spacing=10,
-
-                    ),
-                    padding=10
+            ft.Container(
+                content=ft.Card(
+                    content=change_theme_content,
+                    variant=ft.CardVariant.ELEVATED,
+                    show_border_on_foreground=True,
+                    is_semantic_container=True,
+                    scale=1.2,
                 ),
-                variant=ft.CardVariant.ELEVATED,
-                show_border_on_foreground=True,
-                is_semantic_container=True,
+                width=180
             )
         ]
     ),
-    padding=10
+    padding=20
 )
 
 helppage = ft.Container(
@@ -53,7 +103,8 @@ helppage = ft.Container(
 
 baseform = ft.Container(
     padding=0,
-    content=dbpage
+    content=dbpage,
+    expand=True
 )
 
 
@@ -225,6 +276,7 @@ def _view_(login_type='guest') -> ft.View:
         login_type]
     NavRail.selected_index = 0
     baseform.content = dbpage
+    table_select.selected = {'0'}
 
     if login_type == 'admin':
         return ft.View(
