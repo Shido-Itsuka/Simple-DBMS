@@ -7,6 +7,8 @@ tables = ['Марки_и_модели', 'Характеристики_автом
 
 new_records = {}
 
+edited_records = {}
+
 
 def delete_record_by_id(table_name, record_id):
     conn = sqlite3.connect('car_catalog.db')
@@ -94,6 +96,19 @@ def get_table_rows(table_name):
     return rows
 
 
+def datacell_on_change(e):
+    print(e.control.value)
+    print(e.control.data)
+    if e.control.value != e.control.data["verified_value"]:
+        edited_records[e.control.data["ID"]] = {
+            "column": e.control.data["column"],
+            "row": e.control.data["row"],
+            "table": e.control.data["table"],
+            "new_value": e.control.value
+        }
+    print(edited_records)
+
+
 # Функция для заполнения заголовков таблиц
 def datatable_column_fill(table_name):
     columns = get_column_names(table_name)
@@ -109,6 +124,14 @@ def datatable_row_fill(table_name):
             read_only=True,
             border=ft.InputBorder.NONE,
             expand=True,
+            on_change=datacell_on_change,
+            data={
+                "ID": str(row[0]),
+                "column": str(i),
+                "row": str(row),
+                "table": str(table_name),
+                "verified_value": str(row[i])
+            },
         ),
     )
         for i in range(len(row))]) for row in rows]
@@ -212,7 +235,7 @@ def save_records(e):
             for i in range(len(value.cells)):
                 print(value.cells[i].content.value)
                 data.append(f'{value.cells[i].content.value}')
-            print(20*'-')
+            print(20 * '-')
             print(tuple(data))
             print(key)
             add_record(key, tuple(data))
