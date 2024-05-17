@@ -1,6 +1,7 @@
 import flet as ft
 import sqlite3
 import json
+import settings_module as sem
 
 tables = ['Марки_и_модели', 'Характеристики_автомобилей', 'Дополнительные_опции_и_особенности']
 
@@ -53,7 +54,7 @@ def update_record(table_name, record_id, new_data):
     conn = sqlite3.connect('car_catalog.db')
     cur = conn.cursor()
     # Выполнение запроса на обновление записи
-    cur.execute("UPDATE {} SET Марка = ?, Модель = ? WHERE ID = ?".format(table_name), (*new_data, record_id))
+    cur.execute(f"UPDATE {table_name} SET Марка = ?, Модель = ? WHERE ID = ?", (*new_data, record_id))
     # Подтверждение изменений в базе данных
     conn.commit()
     # Закрытие соединения с базой данных
@@ -71,22 +72,6 @@ def get_column_count(table_name):
     conn.close()
     # Возвращение количества столбцов
     return column_count
-
-
-# Функция для чтения настроек
-def read_settings():
-    with open('settings.json', 'r') as f:
-        settings_file = json.load(f)
-        return settings_file
-
-
-# Функция для записи настроек
-def write_settings(id, new_value):
-    with open('settings.json', 'r') as f:
-        settings_file = json.load(f)
-        settings_file[id] = new_value
-        with open('settings.json', 'w') as w:
-            json.dump(settings_file, w, indent=4, ensure_ascii=False)
 
 
 # Функция для получения названий столбцов
@@ -250,7 +235,7 @@ def textfield_delete_on_change(e):
         table = get_all_ids(tables[int(str(table_select.selected)[2:3])])
         fixed = [int(str(x)[1:-2]) for x in table]
         print(fixed, int(e.control.value), table_select.selected)
-        if min(fixed) <= int(e.control.value) <= max(fixed):
+        if int(e.control.value) in fixed:
             delete_row_button.disabled = False
             delete_row_button.mouse_cursor = ft.MouseCursor.CLICK
         else:
@@ -267,6 +252,20 @@ def delete_row(e):
     refresh_db(int(str(table_select.selected)[2:3]))
     textfield_delete.value = ''
     page_update(e.page)
+
+
+def edit_switch_on_change(e):
+    if e.control.value is True:
+        for _ in [table_1, table_2, table_3]:
+            for i in range(len(_.rows)):
+                for j in range(len(_.rows[i].cells)):
+                    _.rows[i].cells[j].content.read_only = False
+    else:
+        for _ in [table_1, table_2, table_3]:
+            for i in range(len(_.rows)):
+                for j in range(len(_.rows[i].cells)):
+                    _.rows[i].cells[j].content.read_only = True
+    e.page.update()
 
 
 dbpage = ft.Container(
@@ -324,7 +323,7 @@ dbpage = ft.Container(
                 controls=[
                     ft.Row(
                         controls=[
-                            ft.ElevatedButton(
+                            add_record_button := ft.ElevatedButton(
                                 'Добавить запись',
                                 icon=ft.icons.ADD_ROUNDED,
                                 style=ft.ButtonStyle(
@@ -334,7 +333,7 @@ dbpage = ft.Container(
                                 ),
                                 on_click=add_record_on_click
                             ),
-                            ft.Container(
+                            delete_con := ft.Container(
                                 content=ft.Row(
                                     controls=[
                                         ft.Text('Введите ID:', style=ft.TextThemeStyle.LABEL_MEDIUM, size=16),
@@ -365,7 +364,7 @@ dbpage = ft.Container(
                                 border=ft.border.only(bottom=ft.BorderSide(2, ft.colors.OUTLINE_VARIANT)),
                                 padding=ft.padding.only(left=1),
                             ),
-                            ft.Row(
+                            edit_row := ft.Row(
                                 controls=[
                                     ft.Text(
                                         'Разрешить редактирование:',
@@ -373,7 +372,8 @@ dbpage = ft.Container(
                                         style=ft.TextThemeStyle.LABEL_MEDIUM
                                     ),
                                     ft.Switch(
-                                        value=False
+                                        value=False,
+                                        on_change=edit_switch_on_change
                                     )
                                 ]
                             )
@@ -453,20 +453,24 @@ queries = ft.Container(
 
 
 def change_theme(e):
-    e.page.theme_mode = e.page.theme_mode.LIGHT \
-        if e.page.theme_mode == e.page.theme_mode.DARK \
-        else e.page.theme_mode.DARK
-    e.control.selected = True if e.control.selected is False else False
+    if e.page.theme_mode == e.page.theme_mode.DARK:
+        e.page.theme_mode = e.page.theme_mode.LIGHT
+        e.control.selected = True
+        sem.write_settings("PageTheme", "LIGHT")
+    else:
+        e.page.theme_mode = e.page.theme_mode.DARK
+        sem.write_settings("PageTheme", "DARK")
+        e.control.selected = False
     page_update(e.page)
 
 
 def auto_expand_switch_on_change(e):
     if e.control.value is True:
-        write_settings("AutoWindowExtension", True)
+        sem.write_settings("AutoWindowExtension", True)
         window_extension_switch.disabled = True
         window_extension_switch_text.color = ft.colors.ON_SURFACE_VARIANT
     else:
-        write_settings("AutoWindowExtension", False)
+        sem.write_settings("AutoWindowExtension", False)
         window_extension_switch.disabled = False
         window_extension_switch_text.color = ft.colors.ON_SURFACE
     page_update(e.page)
@@ -713,7 +717,7 @@ main_container = ft.Container(
 
 
 def execute_settings():
-    all_settings = read_settings()
+    all_settings = sem.read_settings()
     if all_settings["AutoWindowExtension"] is True:
         AutoExpandSwitch.value = True
         window_extension_switch.disabled = True
@@ -723,6 +727,11 @@ def execute_settings():
         window_extension_switch.disabled = False
         window_extension_switch_text.color = ft.colors.ON_SURFACE
 
+    if all_settings["PageTheme"] == "LIGHT":
+        theme_button.selected = True
+    else:
+        theme_button.selected = False
+
 
 def _view_(login_type='guest') -> ft.View:
     execute_settings()
@@ -731,6 +740,23 @@ def _view_(login_type='guest') -> ft.View:
     NavRail.selected_index = 0
     baseform.content = dbpage
     table_select.selected = {'0'}
+    match login_type:
+        case 'admin':
+            add_record_button.visible = True
+            delete_con.visible = True
+            edit_row.visible = True
+            save_button.visible = True
+        case 'user':
+            add_record_button.visible = True
+            save_button.visible = True
+            edit_row.visible = False
+            delete_con.visible = False
+        case 'guest':
+            add_record_button.visible = False
+            delete_con.visible = False
+            edit_row.visible = False
+            save_button.visible = False
+
     refresh_db(True, True, True)
 
     if login_type == 'admin':
@@ -754,5 +780,6 @@ def _view_(login_type='guest') -> ft.View:
         [
             main_container
         ],
-        padding=0
+        padding=0,
+
     )
