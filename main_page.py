@@ -2,13 +2,85 @@ import flet as ft
 import sqlite3
 import json
 
+tables = ['Марки_и_модели', 'Характеристики_автомобилей', 'Дополнительные_опции_и_особенности']
 
+new_records = {}
+
+
+def delete_record_by_id(table_name, record_id):
+    conn = sqlite3.connect('car_catalog.db')
+    cur = conn.cursor()
+    # Выполнение запроса на удаление записи
+    cur.execute("DELETE FROM {} WHERE ID = ?".format(table_name), (record_id,))
+    # Подтверждение изменений в базе данных
+    conn.commit()
+    # Закрытие соединения с базой данных
+    conn.close()
+
+
+def get_all_ids(table_name):
+    conn = sqlite3.connect('car_catalog.db')
+    cur = conn.cursor()
+    # Выполнение запроса для выбора всех ID из таблицы
+    cur.execute("SELECT ID FROM {}".format(table_name))
+    # Получение результатов запроса
+    ids = cur.fetchall()
+    # Закрытие соединения с базой данных
+    conn.close()
+    # Возвращение списка ID
+    return ids
+
+
+def get_all_ids_pro(table):
+    print(table)
+    return 14
+
+
+def add_record(table_name, data):
+    conn = sqlite3.connect('car_catalog.db')
+    cur = conn.cursor()
+    # Выполнение запроса на добавление записи
+    questions = ', '.join(['?'] * len(data))
+    print(questions)
+    cur.execute(f"INSERT INTO {table_name} VALUES ({questions})", data)
+    # Подтверждение изменений в базе данных
+    conn.commit()
+    # Закрытие соединения с базой данных
+    conn.close()
+
+
+def update_record(table_name, record_id, new_data):
+    conn = sqlite3.connect('car_catalog.db')
+    cur = conn.cursor()
+    # Выполнение запроса на обновление записи
+    cur.execute("UPDATE {} SET Марка = ?, Модель = ? WHERE ID = ?".format(table_name), (*new_data, record_id))
+    # Подтверждение изменений в базе данных
+    conn.commit()
+    # Закрытие соединения с базой данных
+    conn.close()
+
+
+def get_column_count(table_name):
+    conn = sqlite3.connect('car_catalog.db')
+    cur = conn.cursor()
+    # Выполнение запроса на получение информации о столбцах таблицы
+    cur.execute("PRAGMA table_info({})".format(table_name))
+    # Получение результатов запроса и подсчет количества строк
+    column_count = len(cur.fetchall())
+    # Закрытие соединения с базой данных
+    conn.close()
+    # Возвращение количества столбцов
+    return column_count
+
+
+# Функция для чтения настроек
 def read_settings():
     with open('settings.json', 'r') as f:
         settings_file = json.load(f)
         return settings_file
 
 
+# Функция для записи настроек
 def write_settings(id, new_value):
     with open('settings.json', 'r') as f:
         settings_file = json.load(f)
@@ -17,6 +89,7 @@ def write_settings(id, new_value):
             json.dump(settings_file, w, indent=4, ensure_ascii=False)
 
 
+# Функция для получения названий столбцов
 def get_column_names(table_name):
     conn = sqlite3.connect('car_catalog.db')
     cur = conn.cursor()
@@ -36,11 +109,13 @@ def get_table_rows(table_name):
     return rows
 
 
+# Функция для заполнения заголовков таблиц
 def datatable_column_fill(table_name):
     columns = get_column_names(table_name)
     return [ft.DataColumn(ft.Text(columns[i])) for i in range(len(columns))]
 
 
+# Функция для заполнения строк таблиц
 def datatable_row_fill(table_name):
     rows = get_table_rows(table_name)
     return [ft.DataRow(cells=[ft.DataCell(
@@ -57,22 +132,26 @@ def datatable_row_fill(table_name):
 table_1 = ft.DataTable(
     columns=datatable_column_fill('Марки_и_модели'),
     rows=datatable_row_fill('Марки_и_модели'),
-    width=9999,
+    width=1300,
     vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
+    show_checkbox_column=True,
+    data=None,
 )
 
 table_2 = ft.DataTable(
     columns=datatable_column_fill('Характеристики_автомобилей'),
     rows=datatable_row_fill('Характеристики_автомобилей'),
-    width=9999,
+    width=1800,
     vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
+    data=None,
 )
 
 table_3 = ft.DataTable(
     columns=datatable_column_fill('Дополнительные_опции_и_особенности'),
     rows=datatable_row_fill('Дополнительные_опции_и_особенности'),
-    width=9999,
+    width=1300,
     vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
+    data=None,
 )
 
 
@@ -90,12 +169,13 @@ def table_select_on_change(e):
             datatable_container.content.controls[0] = table_3
     datatable_container.update()
     if int(str(e.control.selected)[2:3]) != 1 and AutoExpandSwitch.value is True:
-        e.page.window_width = 1200
+        e.page.window_width = 1300
         e.page.window_center()
         page_update(e.page)
 
 
-def add_record(e):
+def add_record_on_click(e):
+    current_table = [table_1, table_2, table_3][int(str(table_select.selected)[2:3])]
     match int(str(table_select.selected)[2:3]):
         case 0:
             print('Марки и модели')
@@ -104,13 +184,88 @@ def add_record(e):
         case 2:
             print('Дополнительные опции')
 
+    print(current_table)
+
+    table = get_all_ids(tables[int(str(table_select.selected)[2:3])])
+    if current_table.data is None:
+        fixed = max([int(str(x)[1:-2]) for x in table])
+        current_table.data = fixed + 1
+    else:
+        fixed = current_table.data
+        current_table.data = fixed + 1
+    # another_max_id = get_all_ids_pro(current_table)
+
+    new_row = ft.DataRow(cells=[])
+    number_of_colums = get_column_count(tables[int(str(table_select.selected)[2:3])])
+    for i in range(number_of_colums):
+        new_cell = ft.DataCell(
+            ft.TextField(
+                value=str(fixed + 1) if i == 0 else '',
+                read_only=False,
+                border=ft.InputBorder.NONE,
+                expand=True,
+
+            ),
+        )
+        new_row.cells.append(new_cell)
+    # current_table.rows.append(new_row)
+    [table_1, table_2, table_3][int(str(table_select.selected)[2:3])].rows.append(new_row)
+    e.page.update()
+
+    global new_records
+    new_records[tables[int(str(table_select.selected)[2:3])]] = \
+        ([table_1, table_2, table_3][int(str(table_select.selected)[2:3])].rows[-1])
+    # [print(new_records[-1].cells[_].content, sep='\n') for _ in range(number_of_colums)]
+    # print('__' * 20)
+
+
+def save_records(e):
+    global new_records
+    if new_records:
+        for key, value in new_records.items():
+            data = []
+            for i in range(len(value.cells)):
+                print(value.cells[i].content.value)
+                data.append(f'{value.cells[i].content.value}')
+            print(20*'-')
+            print(tuple(data))
+            print(key)
+            add_record(key, tuple(data))
+    e.page.update()
+    new_records = {}
+    refresh_db(first=True, second=True, third=True)
+
 
 def switch_on_change(e):
     if e.control.value is True:
         e.page.window_width = 1800
     else:
-        e.page.window_width = 1200
+        e.page.window_width = 1300
     e.page.window_center()
+    page_update(e.page)
+
+
+def textfield_delete_on_change(e):
+    if e.control.value != '':
+        table = get_all_ids(tables[int(str(table_select.selected)[2:3])])
+        fixed = [int(str(x)[1:-2]) for x in table]
+        print(fixed, int(e.control.value), table_select.selected)
+        if min(fixed) <= int(e.control.value) <= max(fixed):
+            delete_row_button.disabled = False
+            delete_row_button.mouse_cursor = ft.MouseCursor.CLICK
+        else:
+            delete_row_button.disabled = True
+            delete_row_button.mouse_cursor = ft.MouseCursor.NO_DROP
+    else:
+        delete_row_button.disabled = True
+        delete_row_button.mouse_cursor = ft.MouseCursor.NO_DROP
+    e.page.update()
+
+
+def delete_row(e):
+    delete_record_by_id(tables[int(str(table_select.selected)[2:3])], textfield_delete.value)
+    refresh_db(int(str(table_select.selected)[2:3]))
+    textfield_delete.value = ''
     page_update(e.page)
 
 
@@ -150,6 +305,11 @@ dbpage = ft.Container(
                         selected={'0'},
                         show_selected_icon=False,
                         on_change=table_select_on_change
+                    ),
+                    save_button := ft.FilledButton(
+                        'Сохранить',
+                        icon=ft.icons.SAVE_ROUNDED,
+                        on_click=save_records
                     )
                 ],
                 vertical_alignment=ft.CrossAxisAlignment.START
@@ -162,21 +322,81 @@ dbpage = ft.Container(
             ft.Row(
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 controls=[
-                    ft.OutlinedButton(
-                        'Добавить запись',
-                        icon=ft.icons.ADD_ROUNDED,
-                        style=ft.ButtonStyle(
-                            shape=ft.RoundedRectangleBorder(
-                                radius=10
+                    ft.Row(
+                        controls=[
+                            ft.ElevatedButton(
+                                'Добавить запись',
+                                icon=ft.icons.ADD_ROUNDED,
+                                style=ft.ButtonStyle(
+                                    shape=ft.RoundedRectangleBorder(
+                                        radius=10,
+                                    ),
+                                ),
+                                on_click=add_record_on_click
                             ),
-                        ),
-                        on_click=add_record
+                            ft.Container(
+                                content=ft.Row(
+                                    controls=[
+                                        ft.Text('Введите ID:', style=ft.TextThemeStyle.LABEL_MEDIUM, size=16),
+                                        ft.VerticalDivider(width=10, color=ft.colors.TRANSPARENT),
+                                        textfield_delete := ft.TextField(
+                                            # hint_text='Введите ID',
+                                            border=ft.InputBorder.NONE,
+                                            width=50,
+                                            on_change=textfield_delete_on_change,
+                                            input_filter=ft.NumbersOnlyInputFilter()
+                                        ),
+                                        delete_row_button := ft.IconButton(
+                                            icon=ft.icons.DELETE_ROUNDED,
+                                            style=ft.ButtonStyle(
+                                                shape=ft.RoundedRectangleBorder(
+                                                    radius=10,
+                                                ),
+                                                color=ft.colors.ERROR,
+                                            ),
+                                            disabled=True,
+                                            on_click=delete_row,
+                                            mouse_cursor=ft.MouseCursor.NO_DROP
+                                        )
+                                    ],
+                                    spacing=0,
+
+                                ),
+                                border=ft.border.only(bottom=ft.BorderSide(2, ft.colors.OUTLINE_VARIANT)),
+                                padding=ft.padding.only(left=1),
+                            ),
+                            ft.Row(
+                                controls=[
+                                    ft.Text(
+                                        'Разрешить редактирование:',
+                                        size=16,
+                                        style=ft.TextThemeStyle.LABEL_MEDIUM
+                                    ),
+                                    ft.Switch(
+                                        value=False
+                                    )
+                                ]
+                            )
+
+                        ],
+                        spacing=60,
                     ),
-                    window_extension_switch := ft.Switch(
-                        'Расширить окно',
-                        on_change=switch_on_change
-                    ),
-                ]
+                    ft.Row(
+                        controls=[
+                            window_extension_switch_text := ft.Text(
+                                'Расширить окно:',
+                                size=16,
+                                style=ft.TextThemeStyle.LABEL_MEDIUM,
+                                color=ft.colors.ON_SURFACE
+                            ),
+                            window_extension_switch := ft.Switch(
+                                on_change=switch_on_change,
+                            ),
+                        ]
+                    )
+
+                ],
+                spacing=20
             ),
             ft.Divider(
                 height=10,
@@ -207,10 +427,24 @@ dbpage = ft.Container(
 )
 
 
-def refresh_db():
-    table_1.rows = datatable_row_fill('Марки_и_модели')
-    table_2.rows = datatable_row_fill('Характеристики_автомобилей')
-    table_3.rows = datatable_row_fill('Дополнительные_опции_и_особенности')
+def refresh_db(number=None, first=False, second=False, third=False):
+    match number:
+        case 0:
+            table_1.rows = datatable_row_fill('Марки_и_модели')
+            return True
+        case 1:
+            table_2.rows = datatable_row_fill('Характеристики_автомобилей')
+            return True
+        case 2:
+            table_3.rows = datatable_row_fill('Дополнительные_опции_и_особенности')
+            return True
+
+    if first:
+        table_1.rows = datatable_row_fill('Марки_и_модели')
+    if second:
+        table_2.rows = datatable_row_fill('Характеристики_автомобилей')
+    if third:
+        table_3.rows = datatable_row_fill('Дополнительные_опции_и_особенности')
 
 
 queries = ft.Container(
@@ -230,9 +464,11 @@ def auto_expand_switch_on_change(e):
     if e.control.value is True:
         write_settings("AutoWindowExtension", True)
         window_extension_switch.disabled = True
+        window_extension_switch_text.color = ft.colors.ON_SURFACE_VARIANT
     else:
         write_settings("AutoWindowExtension", False)
         window_extension_switch.disabled = False
+        window_extension_switch_text.color = ft.colors.ON_SURFACE
     page_update(e.page)
 
 
@@ -275,7 +511,7 @@ settings = ft.Container(
                                     'Автоматическое расширение окна при открытии 2-ой (широкой) таблицы:\n',
                                     spans=[
                                         ft.TextSpan(
-                                            'P.S. При этом, ручное расширение окна будет отключено',
+                                            'P.S. При этом, переключатель ручного расширения окна будет отключен',
                                             style=ft.TextStyle(size=16, color=ft.colors.ON_SURFACE_VARIANT)
                                         )
                                     ],
@@ -318,6 +554,11 @@ def page_update(p: ft.Page):
 
 
 def logout(e):
+    if e.page.window_width != 1300:
+        e.page.window_width = 1300
+        e.page.window_center()
+        window_extension_switch.value = False
+        page_update(e.page)
     print('Logout')
     e.page.clean()
     e.page.go('/')
@@ -476,9 +717,11 @@ def execute_settings():
     if all_settings["AutoWindowExtension"] is True:
         AutoExpandSwitch.value = True
         window_extension_switch.disabled = True
+        window_extension_switch_text.color = ft.colors.ON_SURFACE_VARIANT
     else:
         AutoExpandSwitch.value = False
         window_extension_switch.disabled = False
+        window_extension_switch_text.color = ft.colors.ON_SURFACE
 
 
 def _view_(login_type='guest') -> ft.View:
@@ -488,7 +731,7 @@ def _view_(login_type='guest') -> ft.View:
     NavRail.selected_index = 0
     baseform.content = dbpage
     table_select.selected = {'0'}
-    refresh_db()
+    refresh_db(True, True, True)
 
     if login_type == 'admin':
         return ft.View(
