@@ -1,5 +1,6 @@
 import flet as ft
 import json
+import settings_module as sem
 
 from main_page import _view_ as main_view
 
@@ -9,7 +10,12 @@ def main(page: ft.Page):
 
     page.title = "Login Page"
     page.window_focused = True
-    page.theme_mode = ft.ThemeMode.DARK
+
+    match sem.read_settings()["PageTheme"]:
+        case "LIGHT":
+            page.theme_mode = ft.ThemeMode.LIGHT
+        case "DARK":
+            page.theme_mode = ft.ThemeMode.DARK
 
     page.window_minimizable = True
     page.window_maximizable = False
