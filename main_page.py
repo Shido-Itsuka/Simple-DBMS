@@ -40,6 +40,12 @@ def get_all_ids_pro(table):
 
 
 def add_record(table_name, data):
+    """
+    Добавляет строку в таблицу базы данных.
+
+    :param table_name: название таблицы
+    :param data: данные для добавления
+    """
     conn = sqlite3.connect('car_catalog.db')
     cur = conn.cursor()
     # Выполнение запроса на добавление записи
@@ -52,15 +58,39 @@ def add_record(table_name, data):
     conn.close()
 
 
-def update_record(table_name, record_id, new_data):
+def update_record(table_name, row_id, updated_data):
+    """
+    Обновляет строку в таблице базы данных SQLite.
+
+    :param table_name: название таблицы, в которой обновляется строка
+    :param row_id: ID строки, которую необходимо обновить
+    :param updated_data: словарь с обновленными данными (название столбца: новое значение)
+    """
+    # Подключаемся к базе данных
     conn = sqlite3.connect('car_catalog.db')
-    cur = conn.cursor()
-    # Выполнение запроса на обновление записи
-    cur.execute(f"UPDATE {table_name} SET Марка = ?, Модель = ? WHERE ID = ?", (*new_data, record_id))
-    # Подтверждение изменений в базе данных
-    conn.commit()
-    # Закрытие соединения с базой данных
-    conn.close()
+    cursor = conn.cursor()
+
+    # Формируем строку запроса для обновления
+    set_clause = ", ".join([f"{col} = ?" for col in updated_data.keys()])
+    query = f"UPDATE {table_name} SET {set_clause} WHERE id = ?"
+
+    # Подготавливаем параметры для запроса
+    params = list(updated_data.values())
+    params.append(row_id)
+
+    try:
+        # Выполняем запрос
+        cursor.execute(query, params)
+
+        # Сохраняем изменения
+        conn.commit()
+
+        print(f"Row with ID {row_id} in table '{table_name}' successfully updated.")
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        # Закрываем соединение с базой данных
+        conn.close()
 
 
 def get_column_count(table_name):
@@ -97,16 +127,36 @@ def get_table_rows(table_name):
 
 
 def datacell_on_change(e):
-    print(e.control.value)
-    print(e.control.data)
-    if e.control.value != e.control.data["verified_value"]:
-        edited_records[e.control.data["ID"]] = {
-            "column": e.control.data["column"],
-            "row": e.control.data["row"],
-            "table": e.control.data["table"],
-            "new_value": e.control.value
+    # надо доделать, криво сделано
+
+    def return_old_value_dict():
+        a = {
+            get_column_names(e.control.data["table"])[i]: e.control.data["column"][i] for i
+            in range(len(list(e.control.data["row"][1:-1])))
         }
-    print(edited_records)
+
+    print('value:', e.control.value)
+    print('data:', e.control.data)
+
+    if e.control.value != e.control.data["verified_value"]:
+        if edited_records.get(e.control.data["ID"]):
+            pass
+        else:
+            edited_records[e.control.data["ID"]] = {
+                "column": e.control.data["column"],
+                "old_value": {
+                    get_column_names(e.control.data["table"])[e.control.data["column"]-1]: e.control.value
+                },
+                "table": e.control.data["table"],
+                "new_value": {
+                    "column": e.control.data["column"],
+
+                }
+            }
+    else:
+        edited_records.pop(e.control.data["ID"])
+        print('Значения не изменились')
+    print('\nТекущие измененные значения:', edited_records, end='\n')
 
 
 # Функция для заполнения заголовков таблиц
@@ -128,10 +178,11 @@ def datatable_row_fill(table_name):
             data={
                 "ID": str(row[0]),
                 "column": str(i),
-                "row": str(row),
+                "row": row,
                 "table": str(table_name),
                 "verified_value": str(row[i])
             },
+            key=str(row[0]) if i == 0 else None
         ),
     )
         for i in range(len(row))]) for row in rows]
@@ -184,6 +235,7 @@ def table_select_on_change(e):
 
 def add_record_on_click(e):
     current_table = [table_1, table_2, table_3][int(str(table_select.selected)[2:3])]
+    datatable_container.content.scroll_to(offset=-1, duration=1000)
     match int(str(table_select.selected)[2:3]):
         case 0:
             print('Марки и модели')
@@ -257,16 +309,20 @@ def textfield_delete_on_change(e):
     if e.control.value != '':
         table = get_all_ids(tables[int(str(table_select.selected)[2:3])])
         fixed = [int(str(x)[1:-2]) for x in table]
-        print(fixed, int(e.control.value), table_select.selected)
+        # print(fixed, int(e.control.value), table_select.selected)
         if int(e.control.value) in fixed:
             delete_row_button.disabled = False
             delete_row_button.mouse_cursor = ft.MouseCursor.CLICK
+            datatable_container.content.scroll_to(key=e.control.value, duration=1000)
         else:
             delete_row_button.disabled = True
             delete_row_button.mouse_cursor = ft.MouseCursor.NO_DROP
+            if int(e.control.value) > max(fixed):
+                datatable_container.content.scroll_to(offset=-1, duration=1000)
     else:
         delete_row_button.disabled = True
         delete_row_button.mouse_cursor = ft.MouseCursor.NO_DROP
+        datatable_container.content.scroll_to(offset=0, duration=1000)
     e.page.update()
 
 
@@ -277,8 +333,8 @@ def delete_row(e):
     page_update(e.page)
 
 
-def edit_switch_on_change(e):
-    if e.control.value is True:
+def allow_rows_editing(status=False):
+    if status is True:
         for _ in [table_1, table_2, table_3]:
             for i in range(len(_.rows)):
                 for j in range(len(_.rows[i].cells)):
@@ -288,6 +344,23 @@ def edit_switch_on_change(e):
             for i in range(len(_.rows)):
                 for j in range(len(_.rows[i].cells)):
                     _.rows[i].cells[j].content.read_only = True
+
+
+def edit_switch_on_change(e):
+    if e.control.value is True:
+        allow_rows_editing(True)
+    else:
+        allow_rows_editing(False)
+    e.page.update()
+
+
+def update_button_on_click(e):
+    refresh_db(int(str(table_select.selected)[2:3]))
+    if edit_row.controls[1].value is True:
+        allow_rows_editing(True)
+    else:
+        allow_rows_editing(False)
+    allow_rows_editing(True)
     e.page.update()
 
 
@@ -297,6 +370,12 @@ dbpage = ft.Container(
             ft.Row(
                 alignment=ft.MainAxisAlignment.CENTER,
                 controls=[
+                    ft.IconButton(
+                        icon=ft.icons.REFRESH_ROUNDED,
+                        tooltip='Обновить таблицу',
+                        on_click=update_button_on_click
+                    )
+                    ,
                     table_select := ft.SegmentedButton(
                         segments=[
                             ft.Segment(
@@ -435,7 +514,7 @@ dbpage = ft.Container(
                     ],
                     scroll=ft.ScrollMode.ALWAYS,
                     expand=True,
-                    # width=99999
+                    auto_scroll=False
                 ),
                 expand=True,
                 alignment=ft.alignment.top_center,
@@ -451,23 +530,41 @@ dbpage = ft.Container(
 
 
 def refresh_db(number=None, first=False, second=False, third=False):
+    def update_table(num):
+        try:
+            match num:
+                case 0:
+                    table_1.update()
+                case 1:
+                    table_2.update()
+                case 2:
+                    table_3.update()
+        except AssertionError as e:
+            print('Cannot update table:', e)
+
     match number:
         case 0:
             table_1.rows = datatable_row_fill('Марки_и_модели')
+            update_table(0)
             return True
         case 1:
             table_2.rows = datatable_row_fill('Характеристики_автомобилей')
+            update_table(1)
             return True
         case 2:
             table_3.rows = datatable_row_fill('Дополнительные_опции_и_особенности')
+            update_table(2)
             return True
 
     if first:
         table_1.rows = datatable_row_fill('Марки_и_модели')
+        update_table(0)
     if second:
         table_2.rows = datatable_row_fill('Характеристики_автомобилей')
+        update_table(1)
     if third:
         table_3.rows = datatable_row_fill('Дополнительные_опции_и_особенности')
+        update_table(2)
 
 
 queries = ft.Container(
@@ -763,6 +860,11 @@ def _view_(login_type='guest') -> ft.View:
     NavRail.selected_index = 0
     baseform.content = dbpage
     table_select.selected = {'0'}
+    datatable_container.content.controls[0] = table_1
+    textfield_delete.value = ''
+    edit_row.controls[1].value = False
+    allow_rows_editing(False)
+    refresh_db(first=True, second=True, third=True)
     match login_type:
         case 'admin':
             add_record_button.visible = True
@@ -779,8 +881,6 @@ def _view_(login_type='guest') -> ft.View:
             delete_con.visible = False
             edit_row.visible = False
             save_button.visible = False
-
-    refresh_db(True, True, True)
 
     if login_type == 'admin':
         return ft.View(
