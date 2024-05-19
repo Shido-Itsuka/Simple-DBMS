@@ -1,6 +1,5 @@
 import flet as ft
 import sqlite3
-import json
 import settings_module as sem
 
 tables = ['Марки_и_модели', 'Характеристики_автомобилей', 'Дополнительные_опции_и_особенности']
@@ -34,17 +33,12 @@ def get_all_ids(table_name):
     return ids
 
 
-def get_all_ids_pro(table):
-    print(table)
-    return 14
-
-
 def add_record(table_name, data):
     """
     Добавляет строку в таблицу базы данных.
 
-    :param table_name: название таблицы
-    :param data: данные для добавления
+    :param table_name: Название таблицы
+    :param data: Данные для добавления
     """
     conn = sqlite3.connect('car_catalog.db')
     cur = conn.cursor()
@@ -58,13 +52,13 @@ def add_record(table_name, data):
     conn.close()
 
 
-def update_record(table_name, row_id, updated_data):
+def update_record(table_name: str, row_id: int, updated_data: dict):
     """
     Обновляет строку в таблице базы данных SQLite.
 
-    :param table_name: название таблицы, в которой обновляется строка
+    :param table_name: Название таблицы обновляемой строки
     :param row_id: ID строки, которую необходимо обновить
-    :param updated_data: словарь с обновленными данными (название столбца: новое значение)
+    :param updated_data: Словарь с обновленными данными (название столбца: новое значение)
     """
     # Подключаемся к базе данных
     conn = sqlite3.connect('car_catalog.db')
@@ -127,35 +121,29 @@ def get_table_rows(table_name):
 
 
 def datacell_on_change(e):
-    # надо доделать, криво сделано
-
-    def return_old_value_dict():
-        a = {
-            get_column_names(e.control.data["table"])[i]: e.control.data["column"][i] for i
-            in range(len(list(e.control.data["row"][1:-1])))
-        }
-
     print('value:', e.control.value)
     print('data:', e.control.data)
+    column = get_column_names(e.control.data["table"])[int(e.control.data["column"])]
 
     if e.control.value != e.control.data["verified_value"]:
+        new_value = e.control.value
         if edited_records.get(e.control.data["ID"]):
-            pass
+            edited_records[e.control.data["ID"]]["new_value"][column] = new_value
+            print('Значения изменились')
         else:
             edited_records[e.control.data["ID"]] = {
-                "column": e.control.data["column"],
-                "old_value": {
-                    get_column_names(e.control.data["table"])[e.control.data["column"]-1]: e.control.value
-                },
+                # "ID": e.control.data["ID"],
                 "table": e.control.data["table"],
                 "new_value": {
-                    "column": e.control.data["column"],
-
+                    column: new_value,
                 }
             }
+            print('Запись создана')
     else:
-        edited_records.pop(e.control.data["ID"])
+        edited_records[e.control.data["ID"]]["new_value"].pop(column)
         print('Значения не изменились')
+    if edited_records[e.control.data["ID"]]["new_value"] == {}:
+        edited_records.pop(e.control.data["ID"])
     print('\nТекущие измененные значения:', edited_records, end='\n')
 
 
@@ -291,9 +279,25 @@ def save_records(e):
             print(tuple(data))
             print(key)
             add_record(key, tuple(data))
+    if edited_records:
+        for key, value in edited_records.items():
+            print(key, value)
+            update_record(
+                value["table"],
+                int(key),
+                value["new_value"]
+            )
+
     e.page.update()
-    new_records = {}
+    new_records.clear()
+    edited_records.clear()
     refresh_db(first=True, second=True, third=True)
+    if edit_row.controls[1].value is True:
+        allow_rows_editing(True)
+    else:
+        allow_rows_editing(False)
+
+    e.page.update()
 
 
 def switch_on_change(e):
@@ -360,7 +364,6 @@ def update_button_on_click(e):
         allow_rows_editing(True)
     else:
         allow_rows_editing(False)
-    allow_rows_editing(True)
     e.page.update()
 
 
@@ -374,8 +377,7 @@ dbpage = ft.Container(
                         icon=ft.icons.REFRESH_ROUNDED,
                         tooltip='Обновить таблицу',
                         on_click=update_button_on_click
-                    )
-                    ,
+                    ),
                     table_select := ft.SegmentedButton(
                         segments=[
                             ft.Segment(
