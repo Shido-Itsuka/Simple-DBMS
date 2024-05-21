@@ -1,6 +1,6 @@
 import flet as ft
 import settings_module as sem
-from db_interaction import *
+from db_interact import *
 
 tables = ['Марки_и_модели', 'Характеристики_автомобилей', 'Дополнительные_опции_и_особенности']
 
@@ -459,7 +459,59 @@ def refresh_db(number=None, first=False, second=False, third=False):
 
 
 queries = ft.Container(
-    content=ft.Text('Запросы')
+    content=ft.Column(
+        controls=[
+            ft.Container(
+                content=ft.Row(
+                    controls=[
+                        ft.Text(
+                            'Запрос:',
+                            size=18,
+                            style=ft.TextThemeStyle.TITLE_MEDIUM
+                        ),
+                        ft.Dropdown(
+                            options=[
+                                ft.dropdown.Option('Запрос 1'),
+                                ft.dropdown.Option('Запрос 2'),
+                                ft.dropdown.Option('Запрос 3'),
+                                ft.dropdown.Option('Запрос 4'),
+                                ft.dropdown.Option('Запрос 5'),
+                                ft.dropdown.Option('Запрос 6'),
+                                ft.dropdown.Option('Запрос 7'),
+                                ft.dropdown.Option('Запрос 8'),
+                                ft.dropdown.Option('Запрос 9'),
+                                ft.dropdown.Option('Запрос 10'),
+                            ],
+                            hint_text='Выберите запрос',
+                        ),
+                    ],
+                    alignment=ft.MainAxisAlignment.START
+                ),
+                border_radius=10,
+                bgcolor=ft.colors.TRANSPARENT,
+                padding=ft.padding.all(10),
+            ),
+            quaries_container := ft.Container(
+                padding=0,
+                content=ft.Column(
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    controls=[
+                        ft.Text('Результат запроса')
+                    ],
+                    scroll=ft.ScrollMode.ALWAYS,
+                    expand=True,
+                    auto_scroll=False
+                ),
+                expand=True,
+                alignment=ft.alignment.top_center,
+                # border=ft.border.all(2, ft.colors.BLACK)
+            )
+        ],
+        expand=True,
+        # scroll=ft.ScrollMode.HIDDEN
+    ),
+    padding=20,
+    expand=True,
 )
 
 
