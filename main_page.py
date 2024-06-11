@@ -1,6 +1,7 @@
 import flet as ft
 import settings_module as sem
 from db_interact import *
+import json
 
 tables = ['Марки_и_модели', 'Характеристики_автомобилей', 'Дополнительные_опции_и_особенности']
 
@@ -458,32 +459,167 @@ def refresh_db(number=None, first=False, second=False, third=False):
         update_table(2)
 
 
+def read_queries():
+    with open('queries.json', 'r', encoding='utf-8') as f:
+        queries_file = json.load(f)
+        return queries_file
+
+
+def queries_dropdown_on_change(e):
+    all_queries = read_queries()
+    e.page.session.set('query', all_queries[queries_dropdown.value]['query'])
+    query_title.text = all_queries[queries_dropdown.value]['name']
+    query_description.text = all_queries[queries_dropdown.value]['description']
+    query_name.visible = True
+    show_query_result_button.disabled = False
+
+    if all_queries[queries_dropdown.value]['type'] == 'with_input':
+        parameter_input_container.visible = True
+    else:
+        parameter_input_container.visible = False
+
+    if queries_dropdown.value is not None:
+        queries_container.content.controls = [ft.Text(all_queries[queries_dropdown.value]['query'])]
+    else:
+        queries_container.content.controls = [ft.Text('Здесь будет результат запроса')]
+    queries.update()
+
+
+def clear_queries_dropdown(e):
+    queries_dropdown.value = None
+    parameter_input.value = ''
+    query_name.visible = False
+    query_title.text = ''
+    query_description.text = ''
+    show_query_result_button.disabled = True
+    parameter_input_container.visible = False
+
+    queries_container.content.controls = [ft.Text('Здесь будет результат запроса')]
+    queries.update()
+
+
+def show_query_result(e):
+    print(e.page.session.get('query'))
+    query_result = execute_query(e.page.session.get('query'))
+    print(query_result)
+    spot_for_result = queries_container.content.controls
+    spot_for_result.append(query_result_table)
+    queries.update()
+
+
+query_result_table = ft.DataTable(
+    # columns=datatable_column_fill('Марки_и_модели'),
+    # rows=datatable_row_fill('Марки_и_модели'),
+    width=1300,
+    vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
+    # show_checkbox_column=True,
+    data=None,
+)
+
 queries = ft.Container(
     content=ft.Column(
         controls=[
             ft.Container(
-                content=ft.Row(
-                    controls=[
-                        ft.Text(
-                            'Запрос:',
-                            size=18,
-                            style=ft.TextThemeStyle.TITLE_MEDIUM
-                        ),
-                        ft.Dropdown(
-                            options=[
-                                ft.dropdown.Option('Запрос 1'),
-                                ft.dropdown.Option('Запрос 2'),
-                                ft.dropdown.Option('Запрос 3'),
-                                ft.dropdown.Option('Запрос 4'),
-                                ft.dropdown.Option('Запрос 5'),
-                                ft.dropdown.Option('Запрос 6'),
-                                ft.dropdown.Option('Запрос 7'),
-                                ft.dropdown.Option('Запрос 8'),
-                                ft.dropdown.Option('Запрос 9'),
-                                ft.dropdown.Option('Запрос 10'),
+                content=ft.Column(
+                    [
+                        ft.Row(
+                            controls=[
+                                ft.Text(
+                                    'Запросы:',
+                                    size=18,
+                                    style=ft.TextThemeStyle.TITLE_MEDIUM
+                                ),
+                                queries_dropdown := ft.Dropdown(
+                                    options=[
+                                        ft.dropdown.Option(key='1', text='Запрос 1'),
+                                        ft.dropdown.Option(key='2', text='Запрос 2'),
+                                        ft.dropdown.Option(key='3', text='Запрос 3'),
+                                        ft.dropdown.Option(key='4', text='Запрос 4'),
+                                        ft.dropdown.Option(key='5', text='Запрос 5'),
+                                        ft.dropdown.Option(key='6', text='Запрос 6'),
+                                        ft.dropdown.Option(key='7', text='Запрос 7'),
+                                        ft.dropdown.Option(key='8', text='Запрос 8'),
+                                        ft.dropdown.Option(key='9', text='Запрос 9'),
+                                        ft.dropdown.Option(key='10', text='Запрос 10'),
+                                    ],
+                                    hint_text='Выберите запрос',
+                                    on_change=queries_dropdown_on_change
+                                ),
+                                clear_queries_dropdown_button := ft.IconButton(
+                                    icon=ft.icons.CLEAR_ROUNDED,
+                                    on_click=clear_queries_dropdown
+                                ),
+                                ft.VerticalDivider(
+                                    thickness=1,
+                                    width=20
+                                ),
+                                show_query_result_button := ft.TextButton(
+                                    text='Показать результат',
+                                    icon=ft.icons.KEYBOARD_ARROW_RIGHT_ROUNDED,
+                                    style=ft.ButtonStyle(
+                                        shape=ft.RoundedRectangleBorder(
+                                            radius=10
+                                        )
+                                    ),
+                                    on_click=show_query_result,
+                                    disabled=True
+                                )
                             ],
-                            hint_text='Выберите запрос',
+                            alignment=ft.MainAxisAlignment.START
                         ),
+                        ft.Container(
+                            content=ft.Row(
+                                controls=[
+                                    query_name := ft.Text(
+                                        expand=True,
+                                        spans=[
+                                            query_title := ft.TextSpan(
+                                                text='Название запроса',
+                                            ),
+                                            ft.TextSpan(
+                                                text=' — ',
+                                            ),
+                                            query_description := ft.TextSpan(
+                                                text='Описание запроса',
+                                            ),
+                                        ]
+                                    ),
+                                ],
+                                expand=False,
+                            )
+                        ),
+                        parameter_input_container := ft.Container(
+                            content=ft.Row(
+                                controls=[
+                                    ft.Text(
+                                        'Параметр запроса:',
+                                        size=16,
+                                        style=ft.TextThemeStyle.TITLE_MEDIUM,
+                                    ),
+                                    ft.VerticalDivider(
+                                        thickness=1,
+                                        width=20,
+                                        color=ft.colors.OUTLINE_VARIANT
+                                    ),
+                                    parameter_input := ft.TextField(
+                                        hint_text='Значение параметра',
+                                        border=ft.InputBorder.NONE,
+                                        # disabled=True,
+                                        expand=True,
+                                        text_size=14,
+                                        hint_style=ft.TextStyle(
+                                            weight=ft.FontWeight.NORMAL
+                                        ),
+                                    ),
+                                ],
+                                expand=False,
+                            ),
+                            border=ft.border.only(
+                                bottom=ft.border.BorderSide(width=2, color=ft.colors.OUTLINE_VARIANT)
+                            ),
+                            width=420,
+                            visible=False
+                        )
                     ],
                     alignment=ft.MainAxisAlignment.START
                 ),
@@ -491,12 +627,12 @@ queries = ft.Container(
                 bgcolor=ft.colors.TRANSPARENT,
                 padding=ft.padding.all(10),
             ),
-            quaries_container := ft.Container(
+            queries_container := ft.Container(
                 padding=0,
                 content=ft.Column(
                     alignment=ft.MainAxisAlignment.CENTER,
                     controls=[
-                        ft.Text('Результат запроса')
+                        ft.Text('Здесь будет результат запроса')
                     ],
                     scroll=ft.ScrollMode.ALWAYS,
                     expand=True,
