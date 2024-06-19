@@ -460,6 +460,7 @@ def refresh_db(number=None, first=False, second=False, third=False):
 
 
 def open_show_query_dialog(e):
+    fill_query_info(e)
     e.page.dialog = show_query_info
     show_query_info.open = True
     e.page.update()
@@ -468,10 +469,65 @@ def open_show_query_dialog(e):
 def close_show_query_dialog(e):
     show_query_info.open = False
     e.page.update()
-    query_help_name.value = 'data'
-    query_help_description.value = 'data'
-    query_help_query.value = 'data'
-    query_help_type.value = 'data'
+    # query_help_name.value = 'data'
+    # query_help_description.value = 'data'
+    # query_help_query.value = 'data'
+    # query_help_type.value = 'data'
+
+
+def fill_query_info(e):
+    query_full_info = e.page.session.get('query_full_info')
+    query_keys = list(query_full_info.keys())
+    query_values = list(query_full_info.values())
+    print('\n', query_keys, '\n', query_values, '\n')
+    if query_keys == ['query', 'name', 'description', 'type', 'columns']:
+        localized_query_labels = ['Запрос', 'Название', 'Описание', 'Тип', 'Столбцы']
+        new_query_full_info = {}
+        for i in range(len(query_full_info.keys())):
+            new_query_full_info[localized_query_labels[i]] = query_values[i]
+        query_full_info = new_query_full_info
+    print(query_full_info)
+    info_list = []
+    for key, value in query_full_info.items():
+        if len(info_list) > 0:
+            info_list.append(
+                ft.Divider(
+                    height=25,
+                    thickness=1,
+                    # color=ft.colors.TRANSPARENT
+                )
+            )
+        info_list.append(
+            ft.Container(
+                ft.Column(
+                    controls=[
+                        ft.Text(
+                            key,
+                            size=18,
+                            style=ft.TextThemeStyle.LABEL_MEDIUM
+                        ),
+                        ft.Text(
+                            value,
+                            size=16,
+                            # style=ft.TextThemeStyle.TITLE_MEDIUM,
+                            selectable=True
+                        )
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER
+                ),
+                padding=0
+            ),
+
+        )
+
+    show_query_info.content.controls = info_list
+
+
+def copy_query(e):
+    e.page.set_clipboard(
+        str(e.page.session.get('query_full_info'))
+    )
+    e.page.update()
 
 
 show_query_info = ft.AlertDialog(
@@ -484,98 +540,35 @@ show_query_info = ft.AlertDialog(
     ),
     content=ft.Column(
         controls=[
-            ft.Container(
-                ft.Column(
-                    controls=[
-                        ft.Text(
-                            'Название запроса:',
-                            size=18,
-                            style=ft.TextThemeStyle.LABEL_MEDIUM
-                        ),
-                        query_help_name := ft.Text(
-                            'data',
-                            size=16,
-                            # style=ft.TextThemeStyle.TITLE_MEDIUM
-                        )
-                    ],
-                    alignment=ft.MainAxisAlignment.CENTER
-                ),
-                padding=0
-            ),
-            ft.Container(
-                ft.Column(
-                    controls=[
-                        ft.Text(
-                            'Описание запроса:',
-                            size=18,
-                            style=ft.TextThemeStyle.LABEL_MEDIUM
-                        ),
-                        query_help_description := ft.Text(
-                            'data',
-                            size=16,
-                            # style=ft.TextThemeStyle.TITLE_MEDIUM
-                        )
-                    ],
-                    alignment=ft.MainAxisAlignment.CENTER
-                ),
-                padding=0
-            ),
-            ft.Container(
-                ft.Column(
-                    controls=[
-                        ft.Text(
-                            'Запрос:',
-                            size=18,
-                            style=ft.TextThemeStyle.LABEL_MEDIUM
-                        ),
-                        query_help_query := ft.Text(
-                            'data',
-                            size=16,
-                            # style=ft.TextThemeStyle.TITLE_MEDIUM
-                        )
-                    ],
-                    alignment=ft.MainAxisAlignment.CENTER
-                ),
-                padding=0
-            ),
-            ft.Container(
-                ft.Column(
-                    controls=[
-                        ft.Text(
-                            'Тип запроса:',
-                            size=18,
-                            style=ft.TextThemeStyle.LABEL_MEDIUM
-                        ),
-                        query_help_type := ft.Text(
-                            'data',
-                            size=16,
-                            # style=ft.TextThemeStyle.TITLE_MEDIUM
-                        )
-                    ],
-                    alignment=ft.MainAxisAlignment.CENTER
-                ),
-                padding=0
-            )
+
         ],
-        spacing=100,
+        spacing=50,
         width=400,
         alignment=ft.MainAxisAlignment.SPACE_EVENLY,
         height=500,
         scroll=ft.ScrollMode.ADAPTIVE,
     ),
+    actions=[
+        ft.TextButton(
+            'Скопировать',
+            on_click=copy_query,
+            style=ft.ButtonStyle(
+                shape={
+                    ft.MaterialState.DEFAULT: ft.RoundedRectangleBorder(
+                        radius=ft.border_radius.all(10)
+                    )
+                }
+            )
+        )
+    ],
+    actions_alignment=ft.MainAxisAlignment.END,
+    # actions_overflow_button_spacing=0,
     shape=ft.RoundedRectangleBorder(
         radius=ft.border_radius.all(10)
     ),
+    scrollable=True
 
 )
-
-
-def query_info_on_click(e):
-    query_help_name.value = e.page.session.get('query_full_info')['name']
-    query_help_description.value = e.page.session.get('query_full_info')['description']
-    query_help_query.value = e.page.session.get('query_full_info')['query']
-    query_help_type.value = e.page.session.get('query_full_info')['type']
-    open_show_query_dialog(e)
 
 
 def read_queries():
@@ -601,25 +594,27 @@ def queries_dropdown_on_change(e):
     else:
         parameter_input_container.visible = False
 
-    if queries_dropdown.value is not None:
-        queries_container.content.controls = [ft.Text(all_queries[queries_dropdown.value]['query'])]
-    else:
-        queries_container.content.controls = [ft.Text('Здесь будет результат запроса')]
+    # if queries_dropdown.value is not None:
+    #     space_for_query_result.controls = [ft.Text(all_queries[queries_dropdown.value]['query'])]
+    # else:
+    #     space_for_query_result.controls = [ft.Text('Здесь будет результат запроса')]
+    space_for_query_result.controls = [ft.Text('Здесь будет результат запроса')]
+
     queries.update()
 
 
 def clear_queries_dropdown(e):
     queries_dropdown.value = None
     parameter_input.value = ''
-    query_name.visible = False
-    query_title.text = ''
-    query_description.text = ''
+    # query_name.visible = False
+    query_title.text = 'Название запроса'
+    query_description.text = 'Описание запроса'
     parameter_input.error_text = ''
     show_query_result_button.disabled = True
     parameter_input_container.visible = False
     show_query_info_button.disabled = True
 
-    queries_container.content.controls = [ft.Text('Здесь будет результат запроса')]
+    space_for_query_result.controls = [ft.Text('Здесь будет результат запроса')]
     queries.update()
 
 
@@ -635,15 +630,30 @@ def show_query_result(e):
         parameter_input.error_text = 'Поле не может быть пустым'
     query_result = execute_query(temp_query)
     print(f'\n{query_result}\n')
-    # spot_for_result = queries_container.content.controls
-    # spot_for_result.append(query_result_table)
+    columns = e.page.session.get('query_full_info')['columns']
+    query_result_table.columns = [ft.DataColumn(ft.Text(columns[i])) for i in range(len(columns))]
+    query_result_table.rows = [ft.DataRow(cells=[ft.DataCell(ft.Text(query_result[i][j]))
+                                                 for j in range(len(columns))]) for i in range(len(query_result))]
+
+    if len(columns) < 6:
+        query_result_table.width = e.page.session.get('window_parameters')['width'] - 280
+    else:
+        # query_result_table.width = sum(len(i) for i in columns) * 15
+        query_result_table.width = None
+
+    space_for_query_result.controls = [
+        query_result_table,
+        ft.Divider(
+            height=5,
+        )
+    ]
     queries.update()
 
 
 query_result_table = ft.DataTable(
     # columns=datatable_column_fill('Марки_и_модели'),
     # rows=datatable_row_fill('Марки_и_модели'),
-    width=1300,
+    # width=1300,
     vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
     # show_checkbox_column=True,
     data=None,
@@ -716,7 +726,7 @@ queries = ft.Container(
                                         show_query_info_button := ft.IconButton(
                                             icon=ft.icons.QUESTION_MARK_ROUNDED,
                                             tooltip='Информация о запросе',
-                                            on_click=query_info_on_click,
+                                            on_click=open_show_query_dialog,
                                             disabled=True
                                         )
                                     ]
@@ -791,7 +801,24 @@ queries = ft.Container(
                 content=ft.Column(
                     alignment=ft.MainAxisAlignment.CENTER,
                     controls=[
-                        ft.Text('Здесь будет результат запроса')
+                        space_for_query_resulta := ft.Row(
+                            controls=[
+                                space_for_query_result := ft.Column(
+                                    controls=[
+                                        ft.Text(
+                                            'Здесь будет результат запроса:',
+                                        )
+                                    ],
+                                    alignment=ft.MainAxisAlignment.START,
+                                    # adaptive=True,
+
+                                )
+                            ],
+                            alignment=ft.MainAxisAlignment.START,
+                            scroll=ft.ScrollMode.ADAPTIVE,
+                            # adaptive=True,
+
+                        )
                     ],
                     scroll=ft.ScrollMode.ALWAYS,
                     expand=True,
