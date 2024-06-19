@@ -27,6 +27,8 @@ def main(page: ft.Page):
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
 
+    page.session.set("window_parameters", {'width': page.window_width, 'height': page.window_height})
+
     page.window_center()
 
     # ---------------------------------------------------------------------------------------------------------
