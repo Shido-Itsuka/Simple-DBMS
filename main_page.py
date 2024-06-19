@@ -928,7 +928,66 @@ settings = ft.Container(
 )
 
 helppage = ft.Container(
-    content=ft.Text('Помощь')
+    content=ft.Column(
+        controls=[
+            ft.Text(
+                'Простая СУБД | Simple DBMS',
+                style=ft.TextThemeStyle.HEADLINE_MEDIUM,
+                # size=22
+            ),
+            ft.Text(
+                'Версия | Version 0.8.0',
+                style=ft.TextThemeStyle.TITLE_MEDIUM,
+                size=18
+            ),
+            ft.Text(
+                spans=[
+                    ft.TextSpan(
+                        'Ссылка на GitHub | GitHub link',
+                        style=ft.TextStyle(
+                            color=ft.colors.BLUE,
+                            size=18
+                        ),
+                        url='https://github.com/Shido-Itsuka/Simple-DBMS'
+                    )
+                ]
+            ),
+            ft.Divider(
+                thickness=2,
+                height=25,
+                # color=ft.colors.TRANSPARENT,
+            ),
+            ft.Text(
+                spans=[
+                    ft.TextSpan(
+                        text='Copyright © 2024 | ',
+                        style=ft.TextStyle(
+                            size=16
+                        )
+                    ),
+                    ft.TextSpan(
+                        text='Shido-Itsuka',
+                        style=ft.TextStyle(
+                            color=ft.colors.BLUE,
+                            size=16
+                        ),
+                        url='https://github.com/Shido-Itsuka'
+                    ),
+                    ft.TextSpan(
+                        text=' | All rights reserved.',
+                        style=ft.TextStyle(
+                            size=16
+                        )
+                    )
+                ],
+                style=ft.TextThemeStyle.LABEL_LARGE
+            )
+        ],
+        # expand=False,
+        alignment=ft.MainAxisAlignment.START,
+        horizontal_alignment=ft.CrossAxisAlignment.START
+    ),
+    padding=50,
 )
 
 baseform = ft.Container(
