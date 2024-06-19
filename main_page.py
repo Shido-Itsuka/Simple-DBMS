@@ -707,7 +707,7 @@ queries = ft.Container(
                                             thickness=1,
                                             width=20
                                         ),
-                                        show_query_result_button := ft.TextButton(
+                                        show_query_result_button := ft.ElevatedButton(
                                             text='Показать результат',
                                             icon=ft.icons.KEYBOARD_ARROW_RIGHT_ROUNDED,
                                             style=ft.ButtonStyle(
@@ -985,7 +985,8 @@ helppage = ft.Container(
         ],
         # expand=False,
         alignment=ft.MainAxisAlignment.START,
-        horizontal_alignment=ft.CrossAxisAlignment.START
+        horizontal_alignment=ft.CrossAxisAlignment.START,
+        spacing=20
     ),
     padding=50,
 )
