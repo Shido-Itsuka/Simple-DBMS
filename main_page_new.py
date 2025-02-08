@@ -6,32 +6,22 @@ import json
 from encrypted_storage import EncryptedStorage
 import sqlite3
 
-storage = EncryptedStorage()
 
-tables = ['Марки_и_модели', 'Характеристики_автомобилей', 'Дополнительные_опции_и_особенности']
+print('Запуск main_page_new.py')
+storage = EncryptedStorage()
+db_manager = dbi.DatabaseManager(storage.load_data()['db_info']['db_path'])
 
 new_records = {}
-
 edited_records = {}
 
-db_manager = dbi.DatabaseManager('temp')
+
+# datatables = [ft.Control()]  # временное решение до заполнения списка
 
 
 def db_manager_create():
     global db_manager
     db_manager = dbi.DatabaseManager(storage.load_data()['db_info']['db_path'])
-
-
-def get_table_names():
-    """Возвращает список таблиц в SQLite базе данных."""
-    conn = sqlite3.connect(storage.load_data()['db_info']['db_path'])
-    cur = conn.cursor()
-
-    cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = [row[0] for row in cur.fetchall()]  # Извлекаем названия таблиц
-
-    conn.close()
-    return tables
+    print(db_manager.get_table_names())
 
 
 def datacell_on_change(e):
@@ -61,7 +51,6 @@ def datacell_on_change(e):
     print('\nТекущие измененные значения:', edited_records, end='\n')
 
 
-# Функция для заполнения заголовков таблиц
 def datatable_column_fill(table_name):
     columns = db_manager.get_column_names(table_name)
     return [ft.DataColumn(ft.Text(columns[i])) for i in range(len(columns))]
@@ -90,51 +79,42 @@ def datatable_row_fill(table_name):
         for i in range(len(row))]) for row in rows]
 
 
-# table_1 = ft.DataTable(
-#     columns=datatable_column_fill('Марки_и_модели'),
-#     rows=datatable_row_fill('Марки_и_модели'),
-#     width=1300,
-#     vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
-#     show_checkbox_column=True,
-#     data=None,
-# )
-#
-# table_2 = ft.DataTable(
-#     columns=datatable_column_fill('Характеристики_автомобилей'),
-#     rows=datatable_row_fill('Характеристики_автомобилей'),
-#     width=1800,
-#     vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
-#     data=None,
-# )
-#
-# table_3 = ft.DataTable(
-#     columns=datatable_column_fill('Дополнительные_опции_и_особенности'),
-#     rows=datatable_row_fill('Дополнительные_опции_и_особенности'),
-#     width=1300,
-#     vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
-#     data=None,
-# )
-
-
 def create_datatables():
     temp_datatables = []
-    table_names = get_table_names()
+    table_names = db_manager.get_table_names()
     for i in range(len(table_names)):
         temp_datatables.append(
-            {
-                f'table_{i + 1}': ft.DataTable(
-                    columns=datatable_column_fill(table_names[i]),
-                    rows=datatable_row_fill(table_names[i]),
-                    width=1300,
-                    vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
-                    data=f'table_{i + 1}',
-                )
-            }
+            ft.DataTable(
+                columns=datatable_column_fill(table_names[i]),
+                rows=datatable_row_fill(table_names[i]),
+                width=1300,
+                vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
+                data=f'table_{i + 1}',
+            )
         )
     return temp_datatables
 
 
 datatables = create_datatables()
+for i in datatables:
+    print(i.data)
+
+
+def create_table_select():
+    temp_list = []
+    table_names = db_manager.get_table_names()
+    for i in range(len(table_names)):
+        temp_list.append(
+            ft.Segment(
+                value=f'{i}',
+                label=ft.Text(
+                    f'{table_names[i]}',
+                    weight=ft.FontWeight.NORMAL,
+                    size=16
+                )
+            )
+        )
+    return temp_list
 
 
 def table_select_on_change(e):
@@ -144,62 +124,25 @@ def table_select_on_change(e):
         case 1:
             datatable_container.content.controls[0] = table_2
             if AutoExpandSwitch.value is True:
-                e.page.window_width = 1800
-                e.page.window_center()
+                e.page.window.width = 1800
+                e.page.window.center()
                 page_update(e.page)
         case 2:
             datatable_container.content.controls[0] = table_3
     datatable_container.update()
     if int(str(e.control.selected)[2:3]) != 1 and AutoExpandSwitch.value is True:
-        e.page.window_width = 1300
-        e.page.window_center()
+        e.page.window.width = 1300
+        e.page.window.center()
         page_update(e.page)
 
 
-def add_record_on_click(e):
-    current_table = [table_1, table_2, table_3][int(str(table_select.selected)[2:3])]
-    datatable_container.content.scroll_to(offset=-1, duration=1000)
-    match int(str(table_select.selected)[2:3]):
-        case 0:
-            print('Марки и модели')
-        case 1:
-            print('Характеристики автомобилей')
-        case 2:
-            print('Дополнительные опции')
-
-    print(current_table)
-
-    table = get_all_ids(tables[int(str(table_select.selected)[2:3])])
-    if current_table.data is None:
-        fixed = max([int(str(x)[1:-2]) for x in table])
-        current_table.data = fixed + 1
+def update_button_on_click(e):
+    refresh_db(int(str(table_select.selected)[2:3]))
+    if edit_row.controls[1].value is True:
+        allow_rows_editing(True)
     else:
-        fixed = current_table.data
-        current_table.data = fixed + 1
-    # another_max_id = get_all_ids_pro(current_table)
-
-    new_row = ft.DataRow(cells=[])
-    number_of_colums = get_column_count(tables[int(str(table_select.selected)[2:3])])
-    for i in range(number_of_colums):
-        new_cell = ft.DataCell(
-            ft.TextField(
-                value=str(fixed + 1) if i == 0 else '',
-                read_only=False,
-                border=ft.InputBorder.NONE,
-                expand=True,
-
-            ),
-        )
-        new_row.cells.append(new_cell)
-    # current_table.rows.append(new_row)
-    [table_1, table_2, table_3][int(str(table_select.selected)[2:3])].rows.append(new_row)
+        allow_rows_editing(False)
     e.page.update()
-
-    global new_records
-    new_records[tables[int(str(table_select.selected)[2:3])]] = \
-        ([table_1, table_2, table_3][int(str(table_select.selected)[2:3])].rows[-1])
-    # [print(new_records[-1].cells[_].content, sep='\n') for _ in range(number_of_colums)]
-    # print('__' * 20)
 
 
 def save_records(e):
@@ -226,7 +169,7 @@ def save_records(e):
     e.page.update()
     new_records.clear()
     edited_records.clear()
-    refresh_db(first=True, second=True, third=True)
+    refresh_db(everything=True)
     if edit_row.controls[1].value is True:
         allow_rows_editing(True)
     else:
@@ -235,18 +178,55 @@ def save_records(e):
     e.page.update()
 
 
-def switch_on_change(e):
-    if e.control.value is True:
-        e.page.window_width = 1800
+def add_record_on_click(e):
+    current_table = datatables[int(str(table_select.selected)[2:3])]
+    datatable_container.content.scroll_to(offset=-1, duration=1000)
+    # match int(str(table_select.selected)[2:3]):
+    #     case 0:
+    #         print('Марки и модели')
+    #     case 1:
+    #         print('Характеристики автомобилей')
+    #     case 2:
+    #         print('Дополнительные опции')
+
+    print(current_table)
+
+    table = get_all_ids(tables[int(str(table_select.selected)[2:3])])
+    if current_table.data is None:
+        fixed = max([int(str(x)[1:-2]) for x in table])
+        current_table.data = fixed + 1
     else:
-        e.page.window_width = 1300
-    e.page.window_center()
-    page_update(e.page)
+        fixed = current_table.data
+        current_table.data = fixed + 1
+    # another_max_id = get_all_ids_pro(current_table)
+
+    new_row = ft.DataRow(cells=[])
+    number_of_colums = get_column_count(tables[int(str(table_select.selected)[2:3])])
+    for i in range(number_of_colums):
+        new_cell = ft.DataCell(
+            ft.TextField(
+                value=str(fixed + 1) if i == 0 else '',
+                read_only=False,
+                border=ft.InputBorder.NONE,
+                expand=True,
+
+            ),
+        )
+        new_row.cells.append(new_cell)
+    # current_table.rows.append(new_row)
+    datatables[int(str(table_select.selected)[2:3])].rows.append(new_row)
+    e.page.update()
+
+    global new_records
+    new_records[datatables[int(str(table_select.selected)[2:3])]] = \
+        (datatables[int(str(table_select.selected)[2:3])].rows[-1])
+    # [print(new_records[-1].cells[_].content, sep='\n') for _ in range(number_of_colums)]
+    # print('__' * 20)
 
 
 def textfield_delete_on_change(e):
     if e.control.value != '':
-        table = get_all_ids(tables[int(str(table_select.selected)[2:3])])
+        table = get_all_ids(datatables[int(str(table_select.selected)[2:3])])
         fixed = [int(str(x)[1:-2]) for x in table]
         # print(fixed, int(e.control.value), table_select.selected)
         if int(e.control.value) in fixed:
@@ -266,7 +246,7 @@ def textfield_delete_on_change(e):
 
 
 def delete_row(e):
-    delete_record_by_id(tables[int(str(table_select.selected)[2:3])], textfield_delete.value)
+    delete_record_by_id(datatables[int(str(table_select.selected)[2:3])], textfield_delete.value)
     refresh_db(int(str(table_select.selected)[2:3]))
     textfield_delete.value = ''
     page_update(e.page)
@@ -274,12 +254,12 @@ def delete_row(e):
 
 def allow_rows_editing(status=False):
     if status is True:
-        for _ in [table_1, table_2, table_3]:
+        for _ in datatables:
             for i in range(len(_.rows)):
                 for j in range(len(_.rows[i].cells)):
                     _.rows[i].cells[j].content.read_only = False
     else:
-        for _ in [table_1, table_2, table_3]:
+        for _ in datatables:
             for i in range(len(_.rows)):
                 for j in range(len(_.rows[i].cells)):
                     _.rows[i].cells[j].content.read_only = True
@@ -293,14 +273,16 @@ def edit_switch_on_change(e):
     e.page.update()
 
 
-def update_button_on_click(e):
-    refresh_db(int(str(table_select.selected)[2:3]))
-    if edit_row.controls[1].value is True:
-        allow_rows_editing(True)
+def switch_on_change(e):
+    if e.control.value is True:
+        e.page.window.width = 1800
     else:
-        allow_rows_editing(False)
-    e.page.update()
+        e.page.window.width = 1300
+    e.page.window.center()
+    page_update(e.page)
 
+
+# -----------------------------------------------------------------------------------
 
 dbpage = ft.Container(
     content=ft.Column(
@@ -315,30 +297,7 @@ dbpage = ft.Container(
                     ),
                     table_select := ft.SegmentedButton(
                         segments=[
-                            ft.Segment(
-                                value='0',
-                                label=ft.Text(
-                                    'Марки и модели',
-                                    weight=ft.FontWeight.NORMAL,
-                                    size=16
-                                )
-                            ),
-                            ft.Segment(
-                                value='1',
-                                label=ft.Text(
-                                    'Характеристики автомобилей',
-                                    weight=ft.FontWeight.NORMAL,
-                                    size=16
-                                )
-                            ),
-                            ft.Segment(
-                                value='2',
-                                label=ft.Text(
-                                    'Дополнительные опции',
-                                    weight=ft.FontWeight.NORMAL,
-                                    size=16
-                                )
-                            )
+                            *create_table_select()
                         ],
                         selected={'0'},
                         show_selected_icon=False,
@@ -447,7 +406,7 @@ dbpage = ft.Container(
                 content=ft.Column(
                     alignment=ft.MainAxisAlignment.CENTER,
                     controls=[
-                        table_1
+                        datatables[0]
                     ],
                     scroll=ft.ScrollMode.ALWAYS,
                     expand=True,
@@ -466,42 +425,114 @@ dbpage = ft.Container(
 )
 
 
-def refresh_db(number=None, first=False, second=False, third=False):
+def refresh_db(number=None, everything=False):
     def update_table(num):
         try:
-            match num:
-                case 0:
-                    table_1.update()
-                case 1:
-                    table_2.update()
-                case 2:
-                    table_3.update()
+            datatables[num].update()
         except AssertionError as e:
             print('Cannot update table:', e)
 
-    match number:
-        case 0:
-            table_1.rows = datatable_row_fill('Марки_и_модели')
-            update_table(0)
-            return True
-        case 1:
-            table_2.rows = datatable_row_fill('Характеристики_автомобилей')
-            update_table(1)
-            return True
-        case 2:
-            table_3.rows = datatable_row_fill('Дополнительные_опции_и_особенности')
-            update_table(2)
-            return True
+    if number:
+        datatables[number].rows = datatable_row_fill(db_manager.get_table_names()[number])
+        update_table(number)
+        return True
 
-    if first:
-        table_1.rows = datatable_row_fill('Марки_и_модели')
-        update_table(0)
-    if second:
-        table_2.rows = datatable_row_fill('Характеристики_автомобилей')
-        update_table(1)
-    if third:
-        table_3.rows = datatable_row_fill('Дополнительные_опции_и_особенности')
-        update_table(2)
+    if everything:
+        table_names = db_manager.get_table_names()
+        for i in range(len(table_names)):
+            datatables[i].rows = datatable_row_fill(table_names[i])
+            update_table(i)
+
+
+# -----------------------------------------------------------------------------------
+
+def read_queries():
+    with open(f'{storage.load_data()["db_info"]["folder_path"]}queries.json', 'r', encoding='utf-8') as f:
+        queries_file = json.load(f)
+        return queries_file
+
+
+def queries_dropdown_on_change(e):
+    print('query changed')
+    all_queries = read_queries()
+    e.page.session.set('query', all_queries[queries_dropdown.value]['query'])
+    e.page.session.set('query_full_info', all_queries[queries_dropdown.value])
+    query_title.text = all_queries[queries_dropdown.value]['name']
+    query_description.text = all_queries[queries_dropdown.value]['description']
+    query_name.visible = True
+    show_query_result_button.disabled = False
+    parameter_input.value = ''
+    show_query_info_button.disabled = False
+
+    if all_queries[queries_dropdown.value]['type'] == 'with_input':
+        parameter_input_container.visible = True
+    else:
+        parameter_input_container.visible = False
+
+    # if queries_dropdown.value is not None:
+    #     space_for_query_result.controls = [ft.Text(all_queries[queries_dropdown.value]['query'])]
+    # else:
+    #     space_for_query_result.controls = [ft.Text('Здесь будет результат запроса')]
+    space_for_query_result.controls = [ft.Text('Здесь будет результат запроса')]
+
+    queries.update()
+
+
+def clear_queries_dropdown(e):
+    queries_dropdown.value = None
+    parameter_input.value = ''
+    # query_name.visible = False
+    query_title.text = 'Название запроса'
+    query_description.text = 'Описание запроса'
+    parameter_input.error_text = ''
+    show_query_result_button.disabled = True
+    parameter_input_container.visible = False
+    show_query_info_button.disabled = True
+
+    space_for_query_result.controls = [ft.Text('Здесь будет результат запроса')]
+    queries.update()
+
+
+def show_query_result(e):
+    parameter_input.update()
+    temp_query = e.page.session.get('query')
+    # print('\nSelected query:', e.page.session.get('query'))
+    if parameter_input.value != '':
+        if '[INPUT]' in e.page.session.get('query'):
+            # e.page.session.set('query', e.page.session.get('query').replace('[INPUT]', parameter_input.value))
+            temp_query = e.page.session.get('query').replace('[INPUT]', parameter_input.value)
+    else:
+        parameter_input.error_text = 'Поле не может быть пустым'
+    query_result = execute_query(temp_query)
+    print(f'\n{query_result}\n')
+    columns = e.page.session.get('query_full_info')['columns']
+    query_result_table.columns = [ft.DataColumn(ft.Text(columns[i])) for i in range(len(columns))]
+    query_result_table.rows = [ft.DataRow(cells=[ft.DataCell(ft.Text(query_result[i][j]))
+                                                 for j in range(len(columns))]) for i in range(len(query_result))]
+
+    if len(columns) < 6:
+        query_result_table.width = e.page.session.get('window_parameters')['width'] - 280
+    else:
+        # query_result_table.width = sum(len(i) for i in columns) * 15
+        query_result_table.width = None
+
+    space_for_query_result.controls = [
+        query_result_table,
+        ft.Divider(
+            height=5,
+        )
+    ]
+    queries.update()
+
+
+query_result_table = ft.DataTable(
+    columns=[],
+    rows=[],
+    # width=1300,
+    vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
+    # show_checkbox_column=True,
+    data=None,
+)
 
 
 def open_show_query_dialog(e):
@@ -598,11 +629,9 @@ show_query_info = ft.AlertDialog(
             'Скопировать',
             on_click=copy_query,
             style=ft.ButtonStyle(
-                shape={
-                    ft.MaterialState.DEFAULT: ft.RoundedRectangleBorder(
-                        radius=ft.border_radius.all(10)
-                    )
-                }
+                shape=ft.RoundedRectangleBorder(
+                    radius=ft.border_radius.all(10)
+                )
             )
         )
     ],
@@ -616,95 +645,6 @@ show_query_info = ft.AlertDialog(
 )
 
 
-def read_queries():
-    with open('queries.json', 'r', encoding='utf-8') as f:
-        queries_file = json.load(f)
-        return queries_file
-
-
-def queries_dropdown_on_change(e):
-    print('query changed')
-    all_queries = read_queries()
-    e.page.session.set('query', all_queries[queries_dropdown.value]['query'])
-    e.page.session.set('query_full_info', all_queries[queries_dropdown.value])
-    query_title.text = all_queries[queries_dropdown.value]['name']
-    query_description.text = all_queries[queries_dropdown.value]['description']
-    query_name.visible = True
-    show_query_result_button.disabled = False
-    parameter_input.value = ''
-    show_query_info_button.disabled = False
-
-    if all_queries[queries_dropdown.value]['type'] == 'with_input':
-        parameter_input_container.visible = True
-    else:
-        parameter_input_container.visible = False
-
-    # if queries_dropdown.value is not None:
-    #     space_for_query_result.controls = [ft.Text(all_queries[queries_dropdown.value]['query'])]
-    # else:
-    #     space_for_query_result.controls = [ft.Text('Здесь будет результат запроса')]
-    space_for_query_result.controls = [ft.Text('Здесь будет результат запроса')]
-
-    queries.update()
-
-
-def clear_queries_dropdown(e):
-    queries_dropdown.value = None
-    parameter_input.value = ''
-    # query_name.visible = False
-    query_title.text = 'Название запроса'
-    query_description.text = 'Описание запроса'
-    parameter_input.error_text = ''
-    show_query_result_button.disabled = True
-    parameter_input_container.visible = False
-    show_query_info_button.disabled = True
-
-    space_for_query_result.controls = [ft.Text('Здесь будет результат запроса')]
-    queries.update()
-
-
-def show_query_result(e):
-    parameter_input.update()
-    temp_query = e.page.session.get('query')
-    # print('\nSelected query:', e.page.session.get('query'))
-    if parameter_input.value != '':
-        if '[INPUT]' in e.page.session.get('query'):
-            # e.page.session.set('query', e.page.session.get('query').replace('[INPUT]', parameter_input.value))
-            temp_query = e.page.session.get('query').replace('[INPUT]', parameter_input.value)
-    else:
-        parameter_input.error_text = 'Поле не может быть пустым'
-    query_result = execute_query(temp_query)
-    print(f'\n{query_result}\n')
-    columns = e.page.session.get('query_full_info')['columns']
-    query_result_table.columns = [ft.DataColumn(ft.Text(columns[i])) for i in range(len(columns))]
-    query_result_table.rows = [ft.DataRow(cells=[ft.DataCell(ft.Text(query_result[i][j]))
-                                                 for j in range(len(columns))]) for i in range(len(query_result))]
-
-    if len(columns) < 6:
-        query_result_table.width = e.page.session.get('window_parameters')['width'] - 280
-    else:
-        # query_result_table.width = sum(len(i) for i in columns) * 15
-        query_result_table.width = None
-
-    space_for_query_result.controls = [
-        query_result_table,
-        ft.Divider(
-            height=5,
-        )
-    ]
-    queries.update()
-
-
-query_result_table = ft.DataTable(
-    # columns=datatable_column_fill('Марки_и_модели'),
-    # rows=datatable_row_fill('Марки_и_модели'),
-    # width=1300,
-    vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
-    # show_checkbox_column=True,
-    data=None,
-)
-
-
 def parameter_input_on_change(e):
     if parameter_input.value == '':
         parameter_input.error_text = 'Поле не может быть пустым'
@@ -712,6 +652,8 @@ def parameter_input_on_change(e):
         parameter_input.error_text = ''
     e.control.update()
 
+
+# -----------------------------------------------------------------------------------
 
 queries = ft.Container(
     content=ft.Column(
@@ -1048,14 +990,11 @@ def page_update(p: ft.Page):
 
 
 def logout(e):
-    if e.page.window_width != 1300:
-        e.page.window_width = 1300
-        e.page.window_center()
-        window_extension_switch.value = False
-        page_update(e.page)
     print('Logout')
     e.page.clean()
-    e.page.go('/login_page')
+    e.page.go('/')
+    # e.page.views.pop()
+    e.page.update()
 
 
 usertab = ft.Column(
@@ -1223,36 +1162,46 @@ def execute_settings():
         theme_button.selected = False
 
 
+# -----------------------------------------------------------------------------------
+
 def _view_(login_type='guest') -> ft.View:
+    global datatables
+    global storage
     execute_settings()
+    storage = EncryptedStorage()
     db_manager_create()
-    print('db_manager_create')
+    datatables = create_datatables()
+    create_table_select()
     user_type_text.value = {'guest': 'Гость', 'admin': 'Админ', 'user': 'Пользователь'}[
         login_type]
     NavRail.selected_index = 0
     baseform.content = dbpage
     table_select.selected = {'0'}
-    datatable_container.content.controls[0] = table_1
+    datatable_container.content.controls[0] = datatables[0]
     textfield_delete.value = ''
     edit_row.controls[1].value = False
     allow_rows_editing(False)
-    refresh_db(first=True, second=True, third=True)
+    refresh_db(everything=True)
+    print('login_type:', login_type)
     match login_type:
         case 'admin':
             add_record_button.visible = True
             delete_con.visible = True
             edit_row.visible = True
             save_button.visible = True
+            print('admin')
         case 'user':
             add_record_button.visible = True
             save_button.visible = True
             edit_row.visible = False
             delete_con.visible = False
+            print('user')
         case 'guest':
             add_record_button.visible = False
             delete_con.visible = False
             edit_row.visible = False
             save_button.visible = False
+            print('guest')
 
     if login_type == 'admin':
         return ft.View(
