@@ -118,22 +118,12 @@ def create_table_select():
 
 
 def table_select_on_change(e):
-    match int(str(e.control.selected)[2:3]):
-        case 0:
-            datatable_container.content.controls[0] = table_1
-        case 1:
-            datatable_container.content.controls[0] = table_2
-            if AutoExpandSwitch.value is True:
-                e.page.window.width = 1800
-                e.page.window.center()
-                page_update(e.page)
-        case 2:
-            datatable_container.content.controls[0] = table_3
+    datatable_container.content.controls[0] = datatables[int(str(e.control.selected)[2:3])]
     datatable_container.update()
-    if int(str(e.control.selected)[2:3]) != 1 and AutoExpandSwitch.value is True:
-        e.page.window.width = 1300
-        e.page.window.center()
-        page_update(e.page)
+    # if int(str(e.control.selected)[2:3]) != 1 and AutoExpandSwitch.value is True:
+    #     e.page.window.width = 1300
+    #     e.page.window.center()
+    #     page_update(e.page)
 
 
 def update_button_on_click(e):
