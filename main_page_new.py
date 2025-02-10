@@ -120,15 +120,11 @@ def create_table_select():
 def table_select_on_change(e):
     datatable_container.content.controls[0] = datatables[int(str(e.control.selected)[2:3])]
     datatable_container.update()
-    # if int(str(e.control.selected)[2:3]) != 1 and AutoExpandSwitch.value is True:
-    #     e.page.window.width = 1300
-    #     e.page.window.center()
-    #     page_update(e.page)
 
 
 def update_button_on_click(e):
-    refresh_db(int(str(table_select.selected)[2:3]))
-    if edit_row.controls[1].value is True:
+    refresh_db(number=int(str(table_select.selected)[2:3]))
+    if edit_row_switch.value is True:
         allow_rows_editing(True)
     else:
         allow_rows_editing(False)
@@ -146,11 +142,11 @@ def save_records(e):
             print(20 * '-')
             print(tuple(data))
             print(key)
-            add_record(key, tuple(data))
+            db_manager.add_record(key, tuple(data))
     if edited_records:
         for key, value in edited_records.items():
             print(key, value)
-            update_record(
+            db_manager.update_record(
                 value["table"],
                 int(key),
                 value["new_value"]
@@ -160,7 +156,7 @@ def save_records(e):
     new_records.clear()
     edited_records.clear()
     refresh_db(everything=True)
-    if edit_row.controls[1].value is True:
+    if edit_row_switch.value is True:
         allow_rows_editing(True)
     else:
         allow_rows_editing(False)
@@ -181,7 +177,7 @@ def add_record_on_click(e):
 
     print(current_table)
 
-    table = get_all_ids(tables[int(str(table_select.selected)[2:3])])
+    table = db_manager.get_all_ids(tables[int(str(table_select.selected)[2:3])])
     if current_table.data is None:
         fixed = max([int(str(x)[1:-2]) for x in table])
         current_table.data = fixed + 1
@@ -191,7 +187,7 @@ def add_record_on_click(e):
     # another_max_id = get_all_ids_pro(current_table)
 
     new_row = ft.DataRow(cells=[])
-    number_of_colums = get_column_count(tables[int(str(table_select.selected)[2:3])])
+    number_of_colums = db_manager.get_column_count(tables[int(str(table_select.selected)[2:3])])
     for i in range(number_of_colums):
         new_cell = ft.DataCell(
             ft.TextField(
@@ -216,7 +212,7 @@ def add_record_on_click(e):
 
 def textfield_delete_on_change(e):
     if e.control.value != '':
-        table = get_all_ids(datatables[int(str(table_select.selected)[2:3])])
+        table = db_manager.get_all_ids(datatables[int(str(table_select.selected)[2:3])])
         fixed = [int(str(x)[1:-2]) for x in table]
         # print(fixed, int(e.control.value), table_select.selected)
         if int(e.control.value) in fixed:
@@ -236,7 +232,7 @@ def textfield_delete_on_change(e):
 
 
 def delete_row(e):
-    delete_record_by_id(datatables[int(str(table_select.selected)[2:3])], textfield_delete.value)
+    db_manager.delete_record_by_id(datatables[int(str(table_select.selected)[2:3])], textfield_delete.value)
     refresh_db(int(str(table_select.selected)[2:3]))
     textfield_delete.value = ''
     page_update(e.page)
@@ -291,7 +287,7 @@ dbpage = ft.Container(
                         ],
                         selected={'0'},
                         show_selected_icon=False,
-                        on_change=table_select_on_change
+                        on_change=table_select_on_change,
                     ),
                     save_button := ft.FilledButton(
                         'Сохранить',
@@ -299,7 +295,7 @@ dbpage = ft.Container(
                         on_click=save_records
                     )
                 ],
-                vertical_alignment=ft.CrossAxisAlignment.START
+                vertical_alignment=ft.CrossAxisAlignment.START,
             ),
             ft.Divider(
                 height=10,
@@ -359,7 +355,7 @@ dbpage = ft.Container(
                                         size=16,
                                         style=ft.TextThemeStyle.LABEL_MEDIUM
                                     ),
-                                    ft.Switch(
+                                    edit_row_switch := ft.Switch(
                                         value=False,
                                         on_change=edit_switch_on_change
                                     )
@@ -493,7 +489,7 @@ def show_query_result(e):
             temp_query = e.page.session.get('query').replace('[INPUT]', parameter_input.value)
     else:
         parameter_input.error_text = 'Поле не может быть пустым'
-    query_result = execute_query(temp_query)
+    query_result = db_manager.execute_query(temp_query)
     print(f'\n{query_result}\n')
     columns = e.page.session.get('query_full_info')['columns']
     query_result_table.columns = [ft.DataColumn(ft.Text(columns[i])) for i in range(len(columns))]
@@ -1169,7 +1165,7 @@ def _view_(login_type='guest') -> ft.View:
     table_select.selected = {'0'}
     datatable_container.content.controls[0] = datatables[0]
     textfield_delete.value = ''
-    edit_row.controls[1].value = False
+    edit_row_switch.value = False
     allow_rows_editing(False)
     refresh_db(everything=True)
     print('login_type:', login_type)
