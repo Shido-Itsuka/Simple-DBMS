@@ -6,6 +6,7 @@ import json
 from encrypted_storage import EncryptedStorage
 import sqlite3
 
+from main_page import NavRail
 
 print('Запуск main_page_new.py')
 storage = EncryptedStorage()
@@ -89,7 +90,11 @@ def create_datatables():
                 rows=datatable_row_fill(table_names[i]),
                 width=1300,
                 vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
-                data=f'table_{i + 1}',
+                # data=f'table_{i + 1}',
+                data={
+                    'data': None,
+                    'table_name': table_names[i]
+                }
             )
         )
     return temp_datatables
@@ -97,7 +102,7 @@ def create_datatables():
 
 datatables = create_datatables()
 for i in datatables:
-    print(i.data)
+    print(i.data['table_name'])
 
 
 def create_table_select():
@@ -123,7 +128,9 @@ def table_select_on_change(e):
 
 
 def update_button_on_click(e):
-    refresh_db(number=int(str(table_select.selected)[2:3]))
+    print('update_button_on_click')
+    # refresh_db(number=int(str(table_select.selected)[2:3]))
+    refresh_db(everything=True)
     if edit_row_switch.value is True:
         allow_rows_editing(True)
     else:
@@ -141,7 +148,7 @@ def save_records(e):
                 data.append(f'{value.cells[i].content.value}')
             print(20 * '-')
             print(tuple(data))
-            print(key)
+            print(f'key: {key}')
             db_manager.add_record(key, tuple(data))
     if edited_records:
         for key, value in edited_records.items():
@@ -166,7 +173,6 @@ def save_records(e):
 
 def add_record_on_click(e):
     current_table = datatables[int(str(table_select.selected)[2:3])]
-    datatable_container.content.scroll_to(offset=-1, duration=1000)
     # match int(str(table_select.selected)[2:3]):
     #     case 0:
     #         print('Марки и модели')
@@ -175,19 +181,23 @@ def add_record_on_click(e):
     #     case 2:
     #         print('Дополнительные опции')
 
-    print(current_table)
+    print(f'{current_table}')
 
-    table = db_manager.get_all_ids(tables[int(str(table_select.selected)[2:3])])
-    if current_table.data is None:
+    table = db_manager.get_all_ids(db_manager.get_table_names()[int(str(table_select.selected)[2:3])])
+    print(f'\ntable: {table}\n')
+    print(max([int(str(x)[1:-2]) for x in table]))
+    if current_table.data['data'] is None:
         fixed = max([int(str(x)[1:-2]) for x in table])
-        current_table.data = fixed + 1
+        print(fixed)
+        current_table.data['data'] = int(fixed) + 1
     else:
-        fixed = current_table.data
-        current_table.data = fixed + 1
+        fixed = current_table.data['data']
+        print(fixed)  # <table_1> as example
+        current_table.data['data'] = int(fixed) + 1
     # another_max_id = get_all_ids_pro(current_table)
 
     new_row = ft.DataRow(cells=[])
-    number_of_colums = db_manager.get_column_count(tables[int(str(table_select.selected)[2:3])])
+    number_of_colums = db_manager.get_column_count(db_manager.get_table_names()[int(str(table_select.selected)[2:3])])
     for i in range(number_of_colums):
         new_cell = ft.DataCell(
             ft.TextField(
@@ -201,18 +211,21 @@ def add_record_on_click(e):
         new_row.cells.append(new_cell)
     # current_table.rows.append(new_row)
     datatables[int(str(table_select.selected)[2:3])].rows.append(new_row)
+    datatable_container.content.scroll_to(offset=-1, duration=1000)
     e.page.update()
 
     global new_records
-    new_records[datatables[int(str(table_select.selected)[2:3])]] = \
+    new_records[current_table.data['table_name']] = \
         (datatables[int(str(table_select.selected)[2:3])].rows[-1])
+    print(f'\nnew_records: \n{new_records}\n')
+    print(table_select.selected)
     # [print(new_records[-1].cells[_].content, sep='\n') for _ in range(number_of_colums)]
     # print('__' * 20)
 
 
 def textfield_delete_on_change(e):
     if e.control.value != '':
-        table = db_manager.get_all_ids(datatables[int(str(table_select.selected)[2:3])])
+        table = db_manager.get_all_ids(db_manager.get_table_names()[int(str(table_select.selected)[2:3])])
         fixed = [int(str(x)[1:-2]) for x in table]
         # print(fixed, int(e.control.value), table_select.selected)
         if int(e.control.value) in fixed:
@@ -232,7 +245,7 @@ def textfield_delete_on_change(e):
 
 
 def delete_row(e):
-    db_manager.delete_record_by_id(datatables[int(str(table_select.selected)[2:3])], textfield_delete.value)
+    db_manager.delete_record_by_id(db_manager.get_table_names()[int(str(table_select.selected)[2:3])], int(textfield_delete.value))
     refresh_db(int(str(table_select.selected)[2:3]))
     textfield_delete.value = ''
     page_update(e.page)
@@ -288,11 +301,18 @@ dbpage = ft.Container(
                         selected={'0'},
                         show_selected_icon=False,
                         on_change=table_select_on_change,
+                        style=ft.ButtonStyle(
+                            padding=15
+                        ),
+
                     ),
                     save_button := ft.FilledButton(
                         'Сохранить',
                         icon=ft.icons.SAVE_ROUNDED,
-                        on_click=save_records
+                        on_click=save_records,
+                        style=ft.ButtonStyle(
+                            padding=16
+                        )
                     )
                 ],
                 vertical_alignment=ft.CrossAxisAlignment.START,
@@ -314,6 +334,7 @@ dbpage = ft.Container(
                                     shape=ft.RoundedRectangleBorder(
                                         radius=10,
                                     ),
+                                    padding=15
                                 ),
                                 on_click=add_record_on_click
                             ),
@@ -985,7 +1006,7 @@ def logout(e):
 
 usertab = ft.Column(
     [
-        ft.Divider(),
+        # ft.Divider(),
         ft.Container(
             content=ft.Row(
                 [
@@ -1014,11 +1035,12 @@ usertab = ft.Column(
                 # top=30,
                 right=10
             ),
-            expand=True
+            expand=True,
+            # bgcolor=ft.Colors.DEEP_ORANGE_ACCENT
         )
     ],
     height=150,
-
+    width=200
 )
 
 
@@ -1081,8 +1103,9 @@ NavRail = ft.NavigationRail(
     selected_index=0,
     label_type=ft.NavigationRailLabelType.SELECTED,
     bgcolor=ft.colors.TRANSPARENT,
-    trailing=usertab,
+    trailing=ft.Divider(),
     width=200,
+    expand=True,
     on_change=on_change_rail,
     unselected_label_text_style=ft.TextStyle(
         size=18
@@ -1109,10 +1132,25 @@ NavRail = ft.NavigationRail(
     )
 )
 
+NavRailContainer = ft.Container(
+    content=ft.Column(
+        controls=[
+            NavRail,
+            ft.Divider(
+                thickness=1,
+
+            ),
+            usertab
+        ],
+        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+        # spacing=0
+    ),
+)
+
 main_container = ft.Container(
     content=ft.Row(
         [
-            NavRail,
+            NavRailContainer,
             ft.VerticalDivider(
                 width=0,
                 thickness=1,
