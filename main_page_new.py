@@ -6,8 +6,6 @@ import json
 from encrypted_storage import EncryptedStorage
 import sqlite3
 
-from main_page import NavRail
-
 print('Запуск main_page_new.py')
 storage = EncryptedStorage()
 db_manager = dbi.DatabaseManager(storage.load_data()['db_info']['db_path'])
@@ -246,7 +244,10 @@ def textfield_delete_on_change(e):
 
 def delete_row(e):
     db_manager.delete_record_by_id(db_manager.get_table_names()[int(str(table_select.selected)[2:3])], int(textfield_delete.value))
-    refresh_db(int(str(table_select.selected)[2:3]))
+    # refresh_db(number=int(str(table_select.selected)[2:3]))
+    # print(int(str(table_select.selected)[2:3]))
+    refresh_db(everything=True)
+    print(f'Запись {textfield_delete.value} удалена')
     textfield_delete.value = ''
     page_update(e.page)
 
@@ -440,8 +441,11 @@ def refresh_db(number=None, everything=False):
             print('Cannot update table:', e)
 
     if number:
+        print(10*'-')
+        print(db_manager.get_table_names()[number])
         datatables[number].rows = datatable_row_fill(db_manager.get_table_names()[number])
         update_table(number)
+        print(10 * '-')
         return True
 
     if everything:
@@ -454,7 +458,7 @@ def refresh_db(number=None, everything=False):
 # -----------------------------------------------------------------------------------
 
 def read_queries():
-    with open(f'{storage.load_data()["db_info"]["folder_path"]}queries.json', 'r', encoding='utf-8') as f:
+    with open(f'{storage.load_data()["db_info"]["folder_path"]}\queries.json', 'r', encoding='utf-8') as f:
         queries_file = json.load(f)
         return queries_file
 
@@ -547,6 +551,7 @@ def open_show_query_dialog(e):
     e.page.dialog = show_query_info
     show_query_info.open = True
     e.page.update()
+    print('open_show_query_dialog')
 
 
 def close_show_query_dialog(e):
@@ -604,6 +609,7 @@ def fill_query_info(e):
         )
 
     show_query_info.content.controls = info_list
+    # print(show_query_info.content.controls)
 
 
 def copy_query(e):
@@ -707,7 +713,8 @@ queries = ft.Container(
                                             style=ft.ButtonStyle(
                                                 shape=ft.RoundedRectangleBorder(
                                                     radius=10
-                                                )
+                                                ),
+                                                padding=20
                                             ),
                                             on_click=show_query_result,
                                             disabled=True
