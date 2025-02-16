@@ -548,14 +548,13 @@ query_result_table = ft.DataTable(
 
 def open_show_query_dialog(e):
     fill_query_info(e)
-    e.page.dialog = show_query_info
-    show_query_info.open = True
+    e.page.open(show_query_info)
     e.page.update()
     print('open_show_query_dialog')
 
 
 def close_show_query_dialog(e):
-    show_query_info.open = False
+    e.page.close(show_query_info)
     e.page.update()
     # query_help_name.value = 'data'
     # query_help_description.value = 'data'
@@ -644,7 +643,8 @@ show_query_info = ft.AlertDialog(
             style=ft.ButtonStyle(
                 shape=ft.RoundedRectangleBorder(
                     radius=ft.border_radius.all(10)
-                )
+                ),
+                padding=20
             )
         )
     ],
@@ -1011,46 +1011,6 @@ def logout(e):
     e.page.update()
 
 
-usertab = ft.Column(
-    [
-        # ft.Divider(),
-        ft.Container(
-            content=ft.Row(
-                [
-                    ft.Row(
-                        [
-                            user_type_text := ft.Text(
-                                'User Type',
-                                style=ft.TextThemeStyle.TITLE_SMALL,
-                                size=18
-                            )
-                        ],
-                        alignment=ft.MainAxisAlignment.CENTER,
-                        expand=True
-                    ),
-                    ft.IconButton(
-                        icon=ft.icons.LOGOUT_ROUNDED,
-                        icon_color=ft.colors.RED_700,
-                        on_click=logout
-                    ),
-                ],
-                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                spacing=20
-            ),
-            padding=ft.padding.only(
-                left=15,
-                # top=30,
-                right=10
-            ),
-            expand=True,
-            # bgcolor=ft.Colors.DEEP_ORANGE_ACCENT
-        )
-    ],
-    height=150,
-    width=200
-)
-
-
 def on_change_rail(e):
     match e.control.selected_index:
         case 0:
@@ -1136,7 +1096,47 @@ NavRail = ft.NavigationRail(
             ft.Divider()
         ],
         height=70
-    )
+    ),
+)
+
+
+usertab = ft.Column(
+    [
+        # ft.Divider(),
+        ft.Container(
+            content=ft.Row(
+                [
+                    ft.Row(
+                        [
+                            user_type_text := ft.Text(
+                                'User Type',
+                                style=ft.TextThemeStyle.TITLE_SMALL,
+                                size=18
+                            )
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        expand=True
+                    ),
+                    ft.IconButton(
+                        icon=ft.icons.LOGOUT_ROUNDED,
+                        icon_color=ft.colors.RED_700,
+                        on_click=logout
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                spacing=20
+            ),
+            padding=ft.padding.only(
+                left=15,
+                # top=30,
+                right=10
+            ),
+            expand=True,
+            # bgcolor=ft.Colors.DEEP_ORANGE_ACCENT
+        )
+    ],
+    height=150,
+    width=NavRail.width
 )
 
 NavRailContainer = ft.Container(
