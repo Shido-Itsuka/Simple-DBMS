@@ -61,6 +61,7 @@ def main(page: ft.Page):
 
     page.session.set("window_parameters", {'width': page.window.width, 'height': page.window.height})
 
+    page.window.maximized = True
     page.window.center()
 
     # ---------------------------------------------------------------------------------------------------------
@@ -131,7 +132,7 @@ def main(page: ft.Page):
                     print(f'Username: {username.value} Password: {password.value}')
                     match username.value:
                         case 'admin':
-                            page.go('/main_page_admin', data=page.session.get('db_info'))
+                            page.go('/main_page_admin')
                         case 'user':
                             page.go('/main_page_user')
                     password.value = ''
