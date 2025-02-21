@@ -4,7 +4,6 @@ import settings_module as sem
 import db_interact as dbi
 import json
 from encrypted_storage import EncryptedStorage
-import sqlite3
 
 print('Запуск main_page_new.py')
 storage = EncryptedStorage()
@@ -12,9 +11,6 @@ db_manager = dbi.DatabaseManager(storage.load_data()['db_info']['db_path'])
 
 new_records = {}
 edited_records = {}
-
-
-# datatables = [ft.Control()]  # временное решение до заполнения списка
 
 
 def db_manager_create():
@@ -88,7 +84,6 @@ def create_datatables():
                 rows=datatable_row_fill(table_names[i]),
                 width=1300,
                 vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
-                # data=f'table_{i + 1}',
                 data={
                     'data': None,
                     'table_name': table_names[i]
@@ -127,7 +122,6 @@ def table_select_on_change(e):
 
 def update_button_on_click(e):
     print('update_button_on_click')
-    # refresh_db(number=int(str(table_select.selected)[2:3]))
     refresh_db(everything=True)
     if edit_row_switch.value is True:
         allow_rows_editing(True)
@@ -171,14 +165,6 @@ def save_records(e):
 
 def add_record_on_click(e):
     current_table = datatables[int(str(table_select.selected)[2:3])]
-    # match int(str(table_select.selected)[2:3]):
-    #     case 0:
-    #         print('Марки и модели')
-    #     case 1:
-    #         print('Характеристики автомобилей')
-    #     case 2:
-    #         print('Дополнительные опции')
-
     print(f'{current_table}')
 
     table = db_manager.get_all_ids(db_manager.get_table_names()[int(str(table_select.selected)[2:3])])
@@ -192,7 +178,6 @@ def add_record_on_click(e):
         fixed = current_table.data['data']
         print(fixed)  # <table_1> as example
         current_table.data['data'] = int(fixed) + 1
-    # another_max_id = get_all_ids_pro(current_table)
 
     new_row = ft.DataRow(cells=[])
     number_of_colums = db_manager.get_column_count(db_manager.get_table_names()[int(str(table_select.selected)[2:3])])
@@ -217,8 +202,6 @@ def add_record_on_click(e):
         (datatables[int(str(table_select.selected)[2:3])].rows[-1])
     print(f'\nnew_records: \n{new_records}\n')
     print(table_select.selected)
-    # [print(new_records[-1].cells[_].content, sep='\n') for _ in range(number_of_colums)]
-    # print('__' * 20)
 
 
 def textfield_delete_on_change(e):
@@ -244,8 +227,6 @@ def textfield_delete_on_change(e):
 
 def delete_row(e):
     db_manager.delete_record_by_id(db_manager.get_table_names()[int(str(table_select.selected)[2:3])], int(textfield_delete.value))
-    # refresh_db(number=int(str(table_select.selected)[2:3]))
-    # print(int(str(table_select.selected)[2:3]))
     refresh_db(everything=True)
     print(f'Запись {textfield_delete.value} удалена')
     textfield_delete.value = ''
@@ -387,20 +368,6 @@ dbpage = ft.Container(
                         ],
                         spacing=60,
                     ),
-                    ft.Row(
-                        controls=[
-                            window_extension_switch_text := ft.Text(
-                                'Расширить окно:',
-                                size=16,
-                                style=ft.TextThemeStyle.LABEL_MEDIUM,
-                                color=ft.colors.ON_SURFACE
-                            ),
-                            window_extension_switch := ft.Switch(
-                                on_change=switch_on_change,
-                            ),
-                        ]
-                    )
-
                 ],
                 spacing=20
             ),
@@ -458,7 +425,7 @@ def refresh_db(number=None, everything=False):
 # -----------------------------------------------------------------------------------
 
 def read_queries():
-    with open(f'{storage.load_data()["db_info"]["folder_path"]}\queries.json', 'r', encoding='utf-8') as f:
+    with open(rf'{storage.load_data()["db_info"]["folder_path"]}\queries.json', 'r', encoding='utf-8') as f:
         queries_file = json.load(f)
         return queries_file
 
@@ -507,10 +474,8 @@ def clear_queries_dropdown(e):
 def show_query_result(e):
     parameter_input.update()
     temp_query = e.page.session.get('query')
-    # print('\nSelected query:', e.page.session.get('query'))
     if parameter_input.value != '':
         if '[INPUT]' in e.page.session.get('query'):
-            # e.page.session.set('query', e.page.session.get('query').replace('[INPUT]', parameter_input.value))
             temp_query = e.page.session.get('query').replace('[INPUT]', parameter_input.value)
     else:
         parameter_input.error_text = 'Поле не может быть пустым'
@@ -524,7 +489,6 @@ def show_query_result(e):
     if len(columns) < 6:
         query_result_table.width = e.page.session.get('window_parameters')['width'] - 280
     else:
-        # query_result_table.width = sum(len(i) for i in columns) * 15
         query_result_table.width = None
 
     space_for_query_result.controls = [
@@ -556,10 +520,6 @@ def open_show_query_dialog(e):
 def close_show_query_dialog(e):
     e.page.close(show_query_info)
     e.page.update()
-    # query_help_name.value = 'data'
-    # query_help_description.value = 'data'
-    # query_help_query.value = 'data'
-    # query_help_type.value = 'data'
 
 
 def fill_query_info(e):
@@ -850,18 +810,6 @@ def change_theme(e):
     page_update(e.page)
 
 
-def auto_expand_switch_on_change(e):
-    if e.control.value is True:
-        sem.write_settings("AutoWindowExtension", True)
-        window_extension_switch.disabled = True
-        window_extension_switch_text.color = ft.colors.ON_SURFACE_VARIANT
-    else:
-        sem.write_settings("AutoWindowExtension", False)
-        window_extension_switch.disabled = False
-        window_extension_switch_text.color = ft.colors.ON_SURFACE
-    page_update(e.page)
-
-
 settings = ft.Container(
     content=ft.Column(
         controls=[
@@ -892,37 +840,6 @@ settings = ft.Container(
                 ),
                 width=200
             ),
-            ft.Container(
-                content=ft.Card(
-                    content=ft.Container(
-                        content=ft.Row(
-                            [
-                                ft.Text(
-                                    'Автоматическое расширение окна при открытии 2-ой (широкой) таблицы:\n',
-                                    spans=[
-                                        ft.TextSpan(
-                                            'P.S. При этом, переключатель ручного расширения окна будет отключен',
-                                            style=ft.TextStyle(size=16, color=ft.colors.ON_SURFACE_VARIANT)
-                                        )
-                                    ],
-                                    size=18
-                                ),
-                                AutoExpandSwitch := ft.Switch(
-                                    on_change=auto_expand_switch_on_change
-                                )
-                            ],
-                            spacing=10,
-                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN
-                        ),
-                        padding=10
-                    ),
-                    variant=ft.CardVariant.ELEVATED,
-                    show_border_on_foreground=True,
-                    is_semantic_container=True,
-                    scale=1,
-                ),
-                width=750
-            )
         ]
     ),
     padding=20
@@ -1178,15 +1095,6 @@ main_container = ft.Container(
 
 def execute_settings():
     all_settings = sem.read_settings()
-    if all_settings["AutoWindowExtension"] is True:
-        AutoExpandSwitch.value = True
-        window_extension_switch.disabled = True
-        window_extension_switch_text.color = ft.colors.ON_SURFACE_VARIANT
-    else:
-        AutoExpandSwitch.value = False
-        window_extension_switch.disabled = False
-        window_extension_switch_text.color = ft.colors.ON_SURFACE
-
     if all_settings["PageTheme"] == "LIGHT":
         theme_button.selected = True
     else:
