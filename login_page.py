@@ -420,7 +420,7 @@ def main(page: ft.Page):
             if "main_page_new" in sys.modules:
                 importlib.reload(sys.modules["main_page_new"])
 
-            from main_page_new import _view_ as main_view
+            from main_page import _view_ as main_view
             match page.route:
                 case "/main_page_admin":
                     page.views.append(main_view(login_type='admin'))
