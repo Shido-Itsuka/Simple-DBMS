@@ -5,7 +5,7 @@ import db_interact as dbi
 import json
 from encrypted_storage import EncryptedStorage
 
-print('Запуск main_page_new.py')
+print('Запуск main_page.py')
 storage = EncryptedStorage()
 db_manager = dbi.DatabaseManager(storage.load_data()['db_info']['db_path'])
 
