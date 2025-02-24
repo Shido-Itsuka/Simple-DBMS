@@ -82,12 +82,13 @@ def create_datatables():
             ft.DataTable(
                 columns=datatable_column_fill(table_names[i]),
                 rows=datatable_row_fill(table_names[i]),
-                width=1300,
+                # width=1300,
                 vertical_lines=ft.BorderSide(width=1, color=ft.colors.OUTLINE_VARIANT),
                 data={
                     'data': None,
                     'table_name': table_names[i]
-                }
+                },
+                expand=True,
             )
         )
     return temp_datatables
@@ -116,7 +117,7 @@ def create_table_select():
 
 
 def table_select_on_change(e):
-    datatable_container.content.controls[0] = datatables[int(str(e.control.selected)[2:3])]
+    datatable_container.content.controls[0].controls[0] = datatables[int(str(e.control.selected)[2:3])]
     datatable_container.update()
 
 
@@ -381,7 +382,13 @@ dbpage = ft.Container(
                 content=ft.Column(
                     alignment=ft.MainAxisAlignment.CENTER,
                     controls=[
-                        datatables[0]
+                        ft.Row(
+                            controls=[
+                                datatables[0]
+                            ],
+                            # scroll=ft.ScrollMode.HIDDEN, # !!! find alternative !!!
+                            expand=True,
+                        )
                     ],
                     scroll=ft.ScrollMode.ALWAYS,
                     expand=True,
@@ -389,7 +396,8 @@ dbpage = ft.Container(
                 ),
                 expand=True,
                 alignment=ft.alignment.top_center,
-                # border=ft.border.all(2, ft.colors.BLACK)
+                # border=ft.border.all(2, ft.colors.BLACK),
+                # bgcolor=ft.colors.RED
             )
         ],
         expand=True,
@@ -854,7 +862,7 @@ helppage = ft.Container(
                 # size=22
             ),
             ft.Text(
-                'Версия | Version 0.8.0',
+                'Версия | Version 0.9.0',
                 style=ft.TextThemeStyle.TITLE_MEDIUM,
                 size=18
             ),
@@ -878,7 +886,7 @@ helppage = ft.Container(
             ft.Text(
                 spans=[
                     ft.TextSpan(
-                        text='Copyright © 2024 | ',
+                        text='Copyright © 2025 | ',
                         style=ft.TextStyle(
                             size=16
                         )
@@ -1110,13 +1118,13 @@ def _view_(login_type='guest') -> ft.View:
     storage = EncryptedStorage()
     db_manager_create()
     datatables = create_datatables()
-    create_table_select()
+    table_select.segments = [*create_table_select()]
     user_type_text.value = {'guest': 'Гость', 'admin': 'Админ', 'user': 'Пользователь'}[
         login_type]
     NavRail.selected_index = 0
     baseform.content = dbpage
     table_select.selected = {'0'}
-    datatable_container.content.controls[0] = datatables[0]
+    datatable_container.content.controls[0].controls[0] = datatables[0]
     textfield_delete.value = ''
     edit_row_switch.value = False
     allow_rows_editing(False)
